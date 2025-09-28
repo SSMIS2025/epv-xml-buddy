@@ -134,7 +134,7 @@ export function WelcomeScreen({ onAccept }: WelcomeScreenProps) {
               className="w-full py-6 text-lg font-semibold"
               size="lg"
             >
-              Start Validating XML Files
+              Accept Terms & Start Validation
             </Button>
           </CardFooter>
         </Card>

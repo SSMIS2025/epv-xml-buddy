@@ -5,9 +5,10 @@ import { toast } from '@/hooks/use-toast';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { FileUpload } from '@/components/FileUpload';
 import { ValidationDashboard } from '@/components/ValidationDashboard';
-import { ValidationResults } from '@/components/ValidationResults';
 import { validateEPGXML } from '@/utils/xmlValidator';
 import { ValidationResult } from '@/types/validation';
+import { ValidationResultsTable } from '@/components/ValidationResultsTable';
+import { Header } from '@/components/Header';
 import { FileText, RotateCcw, Home } from 'lucide-react';
 
 const Index = () => {
@@ -29,6 +30,12 @@ const Index = () => {
       setShowWelcome(false);
     }
   }, []);
+
+  const handleWelcomeAccept = () => {
+    // Set cookie to remember terms acceptance
+    document.cookie = 'epg-validator-terms-accepted=true; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/';
+    setShowWelcome(false);
+  };
 
   const handleFileSelect = async (content: string, name: string) => {
     setXmlContent(content);
@@ -78,11 +85,12 @@ const Index = () => {
   };
 
   if (showWelcome) {
-    return <WelcomeScreen onAccept={() => setShowWelcome(false)} />;
+    return <WelcomeScreen onAccept={handleWelcomeAccept} />;
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-secondary/20 via-background to-accent/20">
+      <Header onLogoClick={() => setShowWelcome(true)} />
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <Card className="mb-8 border-0 shadow-lg bg-card/95 backdrop-blur-sm">
@@ -152,10 +160,11 @@ const Index = () => {
               />
 
               {/* Detailed Results */}
-              <ValidationResults 
+              <ValidationResultsTable 
                 errors={validationResult.errors}
                 warnings={validationResult.warnings}
                 xmlLines={xmlLines}
+                fileName={fileName}
               />
             </>
           )}
@@ -164,12 +173,12 @@ const Index = () => {
           {!xmlContent && !isValidating && (
             <Card className="animate-slide-up">
               <CardHeader>
-                <CardTitle>How to Use the EPG XML Validator</CardTitle>
+                <CardTitle className="text-foreground">How to Use the EPG XML Validator</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-semibold mb-2">Validation Features</h4>
+                    <h4 className="font-semibold mb-2 text-foreground">Validation Features</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• XML structure and tag validation</li>
                       <li>• AdZone count verification</li>
@@ -180,7 +189,7 @@ const Index = () => {
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-semibold mb-2">Supported Features</h4>
+                    <h4 className="font-semibold mb-2 text-foreground">Supported Features</h4>
                     <ul className="text-sm text-muted-foreground space-y-1">
                       <li>• Schema vs actual comparison</li>
                       <li>• Line-by-line error reporting</li>

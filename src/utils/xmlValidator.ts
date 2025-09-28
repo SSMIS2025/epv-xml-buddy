@@ -218,21 +218,23 @@ function validateImageElement(
     const mockFile = mockFileDatabase[fileName];
     
     if (xmlWidth !== mockFile.actualWidth || xmlHeight !== mockFile.actualHeight) {
-      warnings.push({
+      errors.push({
         line: findLineNumber(lines, fileName),
-        message: `Dimension mismatch for ${fileName}: XML declares ${xmlWidth}x${xmlHeight} but actual is ${mockFile.actualWidth}x${mockFile.actualHeight} (AdZone ${adZone}, Ad ${adIndex})`,
-        type: 'warning',
+        message: `{Dimension-Mismatch} File ${fileName}: XML declares ${xmlWidth}x${xmlHeight} but actual dimensions are ${mockFile.actualWidth}x${mockFile.actualHeight} (AdZone ${adZone}, Ad ${adIndex})`,
+        type: 'error',
         adZone,
-        pht
+        pht,
+        field: 'dimensions'
       });
     }
   } else if (fileName) {
-    warnings.push({
+    errors.push({
       line: findLineNumber(lines, fileName),
-      message: `File ${fileName} not found in database (AdZone ${adZone}, Ad ${adIndex})`,
-      type: 'warning',
+      message: `{File-Not-Found} File ${fileName} not found in mock database (AdZone ${adZone}, Ad ${adIndex})`,
+      type: 'error',
       adZone,
-      pht
+      pht,
+      field: 'fileName'
     });
   }
 }

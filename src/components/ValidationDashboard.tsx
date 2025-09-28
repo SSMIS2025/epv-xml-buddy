@@ -19,7 +19,7 @@ export function ValidationDashboard({ result, fileName }: ValidationDashboardPro
         "border-2",
         isValid 
           ? "border-success bg-success/5" 
-          : "border-destructive bg-destructive/5"
+          : "border-destructive bg-destructive/5 animate-failure-shake"
       )}>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
@@ -27,10 +27,10 @@ export function ValidationDashboard({ result, fileName }: ValidationDashboardPro
               {isValid ? (
                 <CheckCircle className="w-8 h-8 text-success" />
               ) : (
-                <AlertCircle className="w-8 h-8 text-destructive" />
+                <AlertCircle className="w-8 h-8 text-destructive animate-heartbeat" />
               )}
               <div>
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-2xl text-foreground">
                   {isValid ? 'Validation Passed' : 'Validation Failed'}
                 </CardTitle>
                 <CardDescription className="text-base">
@@ -71,7 +71,7 @@ export function ValidationDashboard({ result, fileName }: ValidationDashboardPro
         <Card>
           <CardContent className="p-4 text-center">
             <Target className="w-8 h-8 mx-auto mb-2 text-primary" />
-            <div className="text-2xl font-bold">{summary.totalAdZones}</div>
+            <div className="text-2xl font-bold text-foreground">{summary.totalAdZones}</div>
             <div className="text-sm text-muted-foreground">AdZones Found</div>
             <div className="text-xs text-muted-foreground mt-1">
               Expected: {summary.expectedAdZones}
@@ -82,7 +82,7 @@ export function ValidationDashboard({ result, fileName }: ValidationDashboardPro
         <Card>
           <CardContent className="p-4 text-center">
             <FileX className="w-8 h-8 mx-auto mb-2 text-accent" />
-            <div className="text-2xl font-bold">{summary.totalAds}</div>
+            <div className="text-2xl font-bold text-foreground">{summary.totalAds}</div>
             <div className="text-sm text-muted-foreground">Total Ads</div>
             <div className="text-xs text-muted-foreground mt-1">
               Expected: {summary.expectedAds}
@@ -93,7 +93,7 @@ export function ValidationDashboard({ result, fileName }: ValidationDashboardPro
         <Card>
           <CardContent className="p-4 text-center">
             <AlertCircle className="w-8 h-8 mx-auto mb-2 text-destructive" />
-            <div className="text-2xl font-bold">{errors.length}</div>
+            <div className="text-2xl font-bold text-foreground">{errors.length}</div>
             <div className="text-sm text-muted-foreground">Errors</div>
             <div className="text-xs text-muted-foreground mt-1">
               Critical Issues
@@ -104,7 +104,7 @@ export function ValidationDashboard({ result, fileName }: ValidationDashboardPro
         <Card>
           <CardContent className="p-4 text-center">
             <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-warning" />
-            <div className="text-2xl font-bold">{warnings.length}</div>
+            <div className="text-2xl font-bold text-foreground">{warnings.length}</div>
             <div className="text-sm text-muted-foreground">Warnings</div>
             <div className="text-xs text-muted-foreground mt-1">
               Minor Issues
@@ -117,7 +117,7 @@ export function ValidationDashboard({ result, fileName }: ValidationDashboardPro
       {(summary.expectedAdZones !== summary.totalAdZones || summary.expectedAds !== summary.totalAds) && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-foreground">
               <AlertTriangle className="w-5 h-5 text-warning" />
               Schema vs Actual Comparison
             </CardTitle>
@@ -138,9 +138,9 @@ export function ValidationDashboard({ result, fileName }: ValidationDashboardPro
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-border p-3 font-medium">Number of AdZones</td>
-                    <td className="border border-border p-3 text-center">{summary.expectedAdZones}</td>
-                    <td className="border border-border p-3 text-center">{summary.totalAdZones}</td>
+                    <td className="border border-border p-3 font-medium text-foreground">Number of AdZones</td>
+                    <td className="border border-border p-3 text-center text-foreground">{summary.expectedAdZones}</td>
+                    <td className="border border-border p-3 text-center text-foreground">{summary.totalAdZones}</td>
                     <td className="border border-border p-3 text-center">
                       {summary.expectedAdZones === summary.totalAdZones ? (
                         <Badge variant="default" className="bg-success text-success-foreground">Match</Badge>
@@ -150,9 +150,9 @@ export function ValidationDashboard({ result, fileName }: ValidationDashboardPro
                     </td>
                   </tr>
                   <tr className="bg-muted/25">
-                    <td className="border border-border p-3 font-medium">Total Number of Ads</td>
-                    <td className="border border-border p-3 text-center">{summary.expectedAds}</td>
-                    <td className="border border-border p-3 text-center">{summary.totalAds}</td>
+                    <td className="border border-border p-3 font-medium text-foreground">Total Number of Ads</td>
+                    <td className="border border-border p-3 text-center text-foreground">{summary.expectedAds}</td>
+                    <td className="border border-border p-3 text-center text-foreground">{summary.totalAds}</td>
                     <td className="border border-border p-3 text-center">
                       {summary.expectedAds === summary.totalAds ? (
                         <Badge variant="default" className="bg-success text-success-foreground">Match</Badge>
