@@ -9,18 +9,16 @@ import { toast } from '@/hooks/use-toast';
 
 interface ValidationResultsTableProps {
   errors: ValidationError[];
-  warnings: ValidationError[];
-  xmlLines: string[];
   fileName: string;
 }
 
-export function ValidationResultsTable({ errors, warnings, xmlLines, fileName }: ValidationResultsTableProps) {
+export function ValidationResultsTable({ errors, fileName }: ValidationResultsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [filterAdZone, setFilterAdZone] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const itemsPerPage = 10;
 
-  const allIssues = [...errors, ...warnings];
+  const allIssues = [...errors];
 
   // Filter issues
   const filteredIssues = useMemo(() => {
@@ -98,8 +96,7 @@ export function ValidationResultsTable({ errors, warnings, xmlLines, fileName }:
       validationDate: new Date().toISOString(),
       summary: {
         totalIssues: filteredIssues.length,
-        errors: errors.length,
-        warnings: warnings.length
+        errors: errors.length
       },
       issues: filteredIssues.map(issue => ({
         line: issue.line,
@@ -155,7 +152,7 @@ export function ValidationResultsTable({ errors, warnings, xmlLines, fileName }:
                 Validation Issues Details
               </CardTitle>
               <CardDescription>
-                Found {filteredIssues.length} issues ({errors.length} errors, {warnings.length} warnings)
+                Found {filteredIssues.length} issues ({errors.length} errors)
               </CardDescription>
             </div>
             <div className="flex gap-2 flex-wrap">

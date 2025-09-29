@@ -89,9 +89,9 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-secondary/20 via-background to-accent/20">
-      <Header onLogoClick={() => setShowWelcome(true)} />
-      <div className="container mx-auto px-4 py-8">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
+          <Header />
+          <main className="container mx-auto px-4 py-4 lg:py-8">
         {/* Header */}
         <Card className="mb-8 border-0 shadow-lg bg-card/95 backdrop-blur-sm">
           <CardHeader>

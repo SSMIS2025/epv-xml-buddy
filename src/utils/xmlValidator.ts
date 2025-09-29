@@ -1,5 +1,6 @@
 import { ValidationResult, ValidationError, EPGData } from '@/types/validation';
 import { mockFileDatabase } from '@/data/mockFiles';
+import { PHT_VALIDATION_RULES, validateGenre, validateLanguage, validateTimeFormat } from '@/config/phtValidationRules';
 
 export function validateEPGXML(xmlContent: string): ValidationResult {
   const errors: ValidationError[] = [];
@@ -80,8 +81,10 @@ export function validateEPGXML(xmlContent: string): ValidationResult {
       });
     }
 
-    // Validate each adZone
+    // Validate each adZone with PHT-specific rules
     let totalActualAds = 0;
+    const phtGroups: { [key: number]: number[] } = {};
+
     adZoneElements.forEach((adZone, index) => {
       const phtElement = adZone.querySelector('PHT');
       const numberOfAdsElement = adZone.querySelector('numberOfAds');
@@ -90,11 +93,38 @@ export function validateEPGXML(xmlContent: string): ValidationResult {
       const pht = phtElement ? parseInt(phtElement.textContent || '0') : 0;
       const expectedAdsInZone = numberOfAdsElement ? parseInt(numberOfAdsElement.textContent || '0') : 0;
 
+      // Group PHT types for duplicate checking
+      if (!phtGroups[pht]) phtGroups[pht] = [];
+      phtGroups[pht].push(index + 1);
+
+      // Get PHT validation rules
+      const phtRules = PHT_VALIDATION_RULES[pht];
+      if (!phtRules) {
+        errors.push({
+          line: findLineNumber(lines, `<PHT>${pht}</PHT>`),
+          message: `{Invalid-PHT} PHT ${pht} is not a valid PHT type (AdZone ${index + 1})`,
+          type: 'error',
+          adZone: index + 1,
+          pht: pht
+        });
+      } else {
+        // Validate ads count for PHT type
+        if (expectedAdsInZone < phtRules.minAds || expectedAdsInZone > phtRules.maxAds) {
+          errors.push({
+            line: findLineNumber(lines, 'numberOfAds'),
+            message: `{PHT-Rule-Violation} ${phtRules.name} (PHT ${pht}) requires ${phtRules.minAds}-${phtRules.maxAds} ads but ${expectedAdsInZone} declared (AdZone ${index + 1})`,
+            type: 'error',
+            adZone: index + 1,
+            pht: pht
+          });
+        }
+      }
+
       // Check numberOfAds vs actual advertInfo elements
       if (expectedAdsInZone !== advertInfoElements.length) {
         errors.push({
           line: findLineNumber(lines, 'numberOfAds'),
-          message: `AdZone ${index + 1} (PHT ${pht}): Expected ${expectedAdsInZone} ads but found ${advertInfoElements.length}`,
+          message: `{Count-Mismatch} AdZone ${index + 1} (PHT ${pht}): Expected ${expectedAdsInZone} ads but found ${advertInfoElements.length}`,
           type: 'error',
           adZone: index + 1,
           pht: pht
@@ -103,26 +133,93 @@ export function validateEPGXML(xmlContent: string): ValidationResult {
 
       totalActualAds += advertInfoElements.length;
 
-      // Validate each advertInfo
+      // Validate each advertInfo with PHT-specific rules
+      const imageIds: Set<string> = new Set();
       advertInfoElements.forEach((advertInfo, adIndex) => {
         const imageElement = advertInfo.querySelector('image');
+        const animateElement = advertInfo.querySelector('animate');
+        const genreElement = advertInfo.querySelector('genre');
+        const langElement = advertInfo.querySelector('lang');
+        const startTimeElement = advertInfo.querySelector('adsStartTime');
+        const endTimeElement = advertInfo.querySelector('adsExpirationTime');
+
         if (imageElement) {
-          validateImageElement(imageElement, lines, errors, warnings, index + 1, pht, adIndex + 1);
+          validateImageElementWithPHT(imageElement, lines, errors, index + 1, pht, adIndex + 1, phtRules, imageIds);
         }
 
-        // Check required elements
-        const requiredElements = ['genre', 'lang', 'adsStartTime', 'adsExpirationTime'];
-        requiredElements.forEach(elementName => {
-          if (!advertInfo.querySelector(elementName)) {
+        if (animateElement && phtRules) {
+          validateAnimateElement(animateElement, lines, errors, index + 1, pht, adIndex + 1, phtRules);
+        }
+
+        // Validate genre
+        if (genreElement) {
+          const genre = genreElement.textContent || '';
+          if (!validateGenre(genre)) {
             errors.push({
-              line: findLineNumber(lines, 'advertInfo'),
-              message: `Missing <${elementName}> in AdZone ${index + 1}, Ad ${adIndex + 1}`,
+              line: findLineNumber(lines, `<genre>${genre}</genre>`),
+              message: `{Invalid-Genre} Genre '${genre}' must be a valid decimal value like 255 or 460 (AdZone ${index + 1}, Ad ${adIndex + 1})`,
               type: 'error',
               adZone: index + 1,
               pht: pht
             });
           }
-        });
+        }
+
+        // Validate language
+        if (langElement) {
+          const lang = langElement.textContent || '';
+          if (!validateLanguage(lang)) {
+            errors.push({
+              line: findLineNumber(lines, `<lang>${lang}</lang>`),
+              message: `{Invalid-Language} Language '${lang}' must be exactly 3 characters (AdZone ${index + 1}, Ad ${adIndex + 1})`,
+              type: 'error',
+              adZone: index + 1,
+              pht: pht
+            });
+          }
+        }
+
+        // Validate time formats
+        if (startTimeElement) {
+          const startTime = startTimeElement.textContent || '';
+          if (!validateTimeFormat(startTime)) {
+            errors.push({
+              line: findLineNumber(lines, startTime),
+              message: `{Invalid-Time-Format} Start time must follow pattern "YYYY-MM-DDTHH:MM:SS+HH:MM" (AdZone ${index + 1}, Ad ${adIndex + 1})`,
+              type: 'error',
+              adZone: index + 1,
+              pht: pht
+            });
+          }
+        }
+
+        if (endTimeElement) {
+          const endTime = endTimeElement.textContent || '';
+          if (!validateTimeFormat(endTime)) {
+            errors.push({
+              line: findLineNumber(lines, endTime),
+              message: `{Invalid-Time-Format} End time must follow pattern "YYYY-MM-DDTHH:MM:SS+HH:MM" (AdZone ${index + 1}, Ad ${adIndex + 1})`,
+              type: 'error',
+              adZone: index + 1,
+              pht: pht
+            });
+          }
+        }
+
+        // Check required elements for PHT
+        if (phtRules) {
+          phtRules.requiredTags.forEach(tagName => {
+            if (!advertInfo.querySelector(tagName)) {
+              errors.push({
+                line: findLineNumber(lines, 'advertInfo'),
+                message: `{Missing-Tag} Missing <${tagName}> required for ${phtRules.name} (AdZone ${index + 1}, Ad ${adIndex + 1})`,
+                type: 'error',
+                adZone: index + 1,
+                pht: pht
+              });
+            }
+          });
+        }
       });
     });
 
@@ -172,44 +269,101 @@ export function validateEPGXML(xmlContent: string): ValidationResult {
   }
 }
 
-function validateImageElement(
+function validateImageElementWithPHT(
   imageElement: Element,
   lines: string[],
   errors: ValidationError[],
-  warnings: ValidationError[],
   adZone: number,
   pht: number,
-  adIndex: number
+  adIndex: number,
+  phtRules: any,
+  imageIds: Set<string>
 ) {
-  const requiredAttributes = ['id', 'type', 'w', 'h', 'x', 'y', 'fileName', 'resolution', 'duration', 'align', 'style'];
-  
-  requiredAttributes.forEach(attr => {
-    if (!imageElement.hasAttribute(attr)) {
+  // Validate all required attributes for this PHT type
+  Object.entries(phtRules.imageAttributes).forEach(([attr, rules]: [string, any]) => {
+    const value = imageElement.getAttribute(attr);
+    
+    if (rules.required && !value) {
       errors.push({
         line: findLineNumber(lines, 'image'),
-        message: `Missing '${attr}' attribute in image element (AdZone ${adZone}, Ad ${adIndex})`,
+        message: `{Missing-Attribute} Missing '${attr}' attribute required for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
         type: 'error',
         adZone,
         pht,
         field: attr
       });
+      return;
+    }
+
+    if (value) {
+      // Check allowed values
+      if (rules.allowedValues && !rules.allowedValues.includes(value)) {
+        errors.push({
+          line: findLineNumber(lines, `${attr}="${value}"`),
+          message: `{Invalid-Value} Attribute '${attr}' value '${value}' not allowed for ${phtRules.name}. Allowed: ${rules.allowedValues.join(', ')} (AdZone ${adZone}, Ad ${adIndex})`,
+          type: 'error',
+          adZone,
+          pht,
+          field: attr
+        });
+      }
+
+      // Check pattern validation
+      if (rules.pattern && !rules.pattern.test(value)) {
+        errors.push({
+          line: findLineNumber(lines, `${attr}="${value}"`),
+          message: `{Pattern-Mismatch} Attribute '${attr}' value '${value}' doesn't match required pattern for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
+          type: 'error',
+          adZone,
+          pht,
+          field: attr
+        });
+      }
+
+      // Check custom validation
+      if (rules.validation && !rules.validation(value)) {
+        errors.push({
+          line: findLineNumber(lines, `${attr}="${value}"`),
+          message: `{Validation-Failed} Attribute '${attr}' value '${value}' failed validation for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
+          type: 'error',
+          adZone,
+          pht,
+          field: attr
+        });
+      }
     }
   });
 
-  // Validate file type
+  // Check for duplicate IDs within the same PHT
+  const id = imageElement.getAttribute('id');
+  if (id) {
+    if (imageIds.has(id)) {
+      errors.push({
+        line: findLineNumber(lines, `id="${id}"`),
+        message: `{Duplicate-ID} Image ID '${id}' is duplicated within ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
+        type: 'error',
+        adZone,
+        pht,
+        field: 'id'
+      });
+    } else {
+      imageIds.add(id);
+    }
+  }
+
+  // Validate file type against PHT allowed types
   const type = imageElement.getAttribute('type');
-  const validTypes = ['png', 'jpg', 'jpeg', 'm2v', 'mp4'];
-  if (type && !validTypes.includes(type.toLowerCase())) {
+  if (type && !phtRules.allowedFileTypes.includes(type.toLowerCase())) {
     errors.push({
-      line: findLineNumber(lines, 'type'),
-      message: `Invalid file type '${type}' (AdZone ${adZone}, Ad ${adIndex})`,
+      line: findLineNumber(lines, `type="${type}"`),
+      message: `{Invalid-File-Type} File type '${type}' not allowed for ${phtRules.name}. Allowed: ${phtRules.allowedFileTypes.join(', ')} (AdZone ${adZone}, Ad ${adIndex})`,
       type: 'error',
       adZone,
       pht
     });
   }
 
-  // Validate dimensions and file
+  // Validate dimensions and file against mock database
   const fileName = imageElement.getAttribute('fileName');
   const xmlWidth = parseInt(imageElement.getAttribute('w') || '0');
   const xmlHeight = parseInt(imageElement.getAttribute('h') || '0');
@@ -237,6 +391,56 @@ function validateImageElement(
       field: 'fileName'
     });
   }
+}
+
+function validateAnimateElement(
+  animateElement: Element,
+  lines: string[],
+  errors: ValidationError[],
+  adZone: number,
+  pht: number,
+  adIndex: number,
+  phtRules: any
+) {
+  Object.entries(phtRules.animateAttributes).forEach(([attr, rules]: [string, any]) => {
+    const value = animateElement.getAttribute(attr);
+    
+    if (rules.required && !value) {
+      errors.push({
+        line: findLineNumber(lines, 'animate'),
+        message: `{Missing-Attribute} Missing '${attr}' attribute in animate element for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
+        type: 'error',
+        adZone,
+        pht,
+        field: attr
+      });
+      return;
+    }
+
+    if (value) {
+      if (rules.allowedValues && !rules.allowedValues.includes(value)) {
+        errors.push({
+          line: findLineNumber(lines, `${attr}="${value}"`),
+          message: `{Invalid-Value} Animate attribute '${attr}' value '${value}' not allowed for ${phtRules.name}. Allowed: ${rules.allowedValues.join(', ')} (AdZone ${adZone}, Ad ${adIndex})`,
+          type: 'error',
+          adZone,
+          pht,
+          field: attr
+        });
+      }
+
+      if (rules.pattern && !rules.pattern.test(value)) {
+        errors.push({
+          line: findLineNumber(lines, `${attr}="${value}"`),
+          message: `{Pattern-Mismatch} Animate attribute '${attr}' value '${value}' doesn't match required pattern for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
+          type: 'error',
+          adZone,
+          pht,
+          field: attr
+        });
+      }
+    }
+  });
 }
 
 function findLineNumber(lines: string[], searchText: string): number {
