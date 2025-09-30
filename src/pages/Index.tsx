@@ -10,6 +10,7 @@ import { ValidationResult } from '@/types/validation';
 import { ValidationResultsTable } from '@/components/ValidationResultsTable';
 import { Header } from '@/components/Header';
 import { FileText, RotateCcw, Home } from 'lucide-react';
+import { saveValidationHistory } from '@/utils/historyStorage';
 
 const Index = () => {
   const [showWelcome, setShowWelcome] = useState(true);
@@ -18,6 +19,7 @@ const Index = () => {
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [xmlLines, setXmlLines] = useState<string[]>([]);
+  const [selectedPHT, setSelectedPHT] = useState<string>('all');
 
   useEffect(() => {
     // Check if user has already accepted terms
@@ -50,6 +52,9 @@ const Index = () => {
       const result = validateEPGXML(content);
       setValidationResult(result);
       
+      // Save to history
+      saveValidationHistory(name, result);
+      
       if (result.isValid) {
         toast({
           title: "Validation Successful",
@@ -78,6 +83,7 @@ const Index = () => {
     setFileName('');
     setValidationResult(null);
     setXmlLines([]);
+    setSelectedPHT('all');
   };
 
   const handleRestart = () => {
@@ -157,6 +163,8 @@ const Index = () => {
               <ValidationDashboard 
                 result={validationResult} 
                 fileName={fileName}
+                selectedPHT={selectedPHT}
+                onPHTFilterChange={setSelectedPHT}
               />
 
               {/* Detailed Results */}
@@ -165,6 +173,7 @@ const Index = () => {
                 warnings={validationResult.warnings}
                 xmlLines={xmlLines}
                 fileName={fileName}
+                selectedPHT={selectedPHT}
               />
             </>
           )}

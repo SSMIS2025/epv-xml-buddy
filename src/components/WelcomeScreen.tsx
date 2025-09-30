@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { CheckCircle, FileText, Shield, Zap } from 'lucide-react';
+import { ValidationHistoryComponent } from '@/components/ValidationHistory';
 
 interface WelcomeScreenProps {
   onAccept: () => void;
@@ -21,7 +22,11 @@ export function WelcomeScreen({ onAccept }: WelcomeScreenProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-secondary/20 via-background to-accent/20 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl animate-welcome">
+      <div className="w-full max-w-6xl animate-welcome space-y-6">
+        {/* Recent Validations History */}
+        <ValidationHistoryComponent />
+        
+        <div className="w-full">
         <Card className="border-0 shadow-2xl bg-card/95 backdrop-blur-sm">
           <CardHeader className="text-center pb-8">
             <div className="mx-auto mb-6 w-20 h-20 bg-primary rounded-full flex items-center justify-center animate-bounce-gentle">
@@ -138,6 +143,7 @@ export function WelcomeScreen({ onAccept }: WelcomeScreenProps) {
             </Button>
           </CardFooter>
         </Card>
+        </div>
       </div>
     </div>
   );

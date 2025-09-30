@@ -12,8 +12,14 @@ interface ValidationDashboardProps {
   fileName: string;
 }
 
-export const ValidationDashboard = ({ result, fileName }: ValidationDashboardProps) => {
-  const [selectedPHT, setSelectedPHT] = useState<string>('all');
+interface ValidationDashboardProps {
+  result: ValidationResult;
+  fileName: string;
+  selectedPHT: string;
+  onPHTFilterChange: (value: string) => void;
+}
+
+export const ValidationDashboard = ({ result, fileName, selectedPHT, onPHTFilterChange }: ValidationDashboardProps) => {
 
   const exportToCSV = () => {
     
@@ -81,38 +87,34 @@ export const ValidationDashboard = ({ result, fileName }: ValidationDashboardPro
   return (
     <div className="space-y-6">
       <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="relative overflow-hidden">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Validation Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  {result.isValid ? (
-                    <>
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
-                        Valid
-                      </Badge>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-5 h-5 text-red-600 animate-pulse" />
-                      <Badge variant="destructive" className="animate-pulse">
-                        Invalid
-                      </Badge>
-                    </>
-                  )}
-                </div>
-                {!result.isValid && (
-                  <div className="mt-2 text-xs text-red-600 animate-pulse">
-                    ❤️ Validation failed - Please check errors
-                  </div>
+          {/* Large Validation Status Banner */}
+          <Card className={`relative overflow-hidden border-2 ${result.isValid ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
+            <CardContent className="p-8">
+              <div className="flex items-center justify-center gap-6">
+                {result.isValid ? (
+                  <>
+                    <CheckCircle className="w-16 h-16 text-green-600 animate-bounce" />
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-green-700 mb-2">Validation Passed ✓</div>
+                      <div className="text-green-600">All checks completed successfully</div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-16 h-16 text-red-600 animate-[pulse_1s_ease-in-out_infinite]" />
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-red-700 mb-2 animate-[pulse_1s_ease-in-out_infinite]">
+                        ❤️ Validation Failed
+                      </div>
+                      <div className="text-red-600">Please review the errors below</div>
+                    </div>
+                  </>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
             <Card>
               <CardHeader className="pb-2">
@@ -183,34 +185,38 @@ export const ValidationDashboard = ({ result, fileName }: ValidationDashboardPro
             </Card>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              <Select value={selectedPHT} onValueChange={setSelectedPHT}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by PHT" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All PHT Types</SelectItem>
-                  {Object.values(PHT_VALIDATION_RULES).map((rule) => (
-                    <SelectItem key={rule.phtType} value={rule.phtType.toString()}>
-                      PHT {rule.phtType} - {rule.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={exportToCSV} variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Export CSV
-              </Button>
-              <Button onClick={exportToJSON} variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Export JSON
-              </Button>
-            </div>
-          </div>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  <Select value={selectedPHT} onValueChange={onPHTFilterChange}>
+                    <SelectTrigger className="w-[280px]">
+                      <SelectValue placeholder="Filter by PHT Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All PHT Types</SelectItem>
+                      {Object.values(PHT_VALIDATION_RULES).map((rule) => (
+                        <SelectItem key={rule.phtType} value={rule.phtType.toString()}>
+                          PHT {rule.phtType} - {rule.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={exportToCSV} variant="outline" size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export CSV
+                  </Button>
+                  <Button onClick={exportToJSON} variant="outline" size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export JSON
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </>
       </div>
   );

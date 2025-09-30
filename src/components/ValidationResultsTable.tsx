@@ -3,33 +3,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ValidationError } from '@/types/validation';
-import { AlertCircle, ChevronLeft, ChevronRight, Filter, Download, FileText, Table } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Filter, Download, FileText, Table, ChevronDown } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { PHT_VALIDATION_RULES } from '@/config/phtValidationRules';
 
 interface ValidationResultsTableProps {
   errors: ValidationError[];
   warnings?: ValidationError[];
   xmlLines: string[];
   fileName: string;
+  selectedPHT: string;
 }
 
-export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileName }: ValidationResultsTableProps) {
+export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileName, selectedPHT }: ValidationResultsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [filterAdZone, setFilterAdZone] = useState<string>('all');
-  const [filterType, setFilterType] = useState<string>('all');
   const itemsPerPage = 10;
 
   const allIssues = [...errors];
 
-  // Filter issues
+  // Filter issues by both PHT and AdZone
   const filteredIssues = useMemo(() => {
     return allIssues.filter(issue => {
+      const phtMatch = selectedPHT === 'all' || (issue.pht && issue.pht.toString() === selectedPHT);
       const adZoneMatch = filterAdZone === 'all' || (issue.adZone && issue.adZone.toString() === filterAdZone);
-      const typeMatch = filterType === 'all' || issue.type === filterType;
-      return adZoneMatch && typeMatch;
+      return phtMatch && adZoneMatch;
     });
-  }, [allIssues, filterAdZone, filterType]);
+  }, [allIssues, selectedPHT, filterAdZone]);
 
   // Pagination
   const totalPages = Math.ceil(filteredIssues.length / itemsPerPage);
@@ -142,9 +144,15 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
     );
   }
 
+  // Get PHT name
+  const getPHTName = (phtType: number) => {
+    const rule = Object.values(PHT_VALIDATION_RULES).find(r => r.phtType === phtType);
+    return rule ? rule.name : 'Unknown';
+  };
+
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header with Filters and Export */}
+      {/* Validation Issues Details with Accordion */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -152,9 +160,14 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
               <CardTitle className="flex items-center gap-2 text-foreground">
                 <Table className="w-5 h-5" />
                 Validation Issues Details
+                {selectedPHT !== 'all' && (
+                  <Badge variant="secondary" className="ml-2">
+                    PHT {selectedPHT} - {getPHTName(parseInt(selectedPHT))}
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
-                Found {filteredIssues.length} issues ({errors.length} errors)
+                Found {filteredIssues.length} issues in {selectedPHT === 'all' ? 'all PHT types' : `PHT ${selectedPHT}`}
               </CardDescription>
             </div>
             <div className="flex gap-2 flex-wrap">
@@ -169,17 +182,6 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
                       Zone {zone}
                     </SelectItem>
                   ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="All Types" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="error">Errors</SelectItem>
-                  <SelectItem value="warning">Warnings</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -197,126 +199,115 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
         </CardHeader>
       </Card>
 
-      {/* Issues Table */}
+      {/* Issues Accordion */}
       <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-muted/50 border-b border-border">
-                  <th className="p-3 text-left font-semibold text-foreground">Line</th>
-                  <th className="p-3 text-left font-semibold text-foreground">AdZone/PHT</th>
-                  <th className="p-3 text-left font-semibold text-foreground">Error Tag</th>
-                  <th className="p-3 text-left font-semibold text-foreground">Message</th>
-                  <th className="p-3 text-left font-semibold text-foreground">Expected</th>
-                  <th className="p-3 text-left font-semibold text-foreground">Actual</th>
-                  <th className="p-3 text-left font-semibold text-foreground">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedIssues.map((issue, index) => {
-                  const errorTag = getErrorTag(issue.message);
-                  const isEven = index % 2 === 0;
-                  
-                  return (
-                    <tr 
-                      key={index} 
-                      className={`border-b border-border hover:bg-muted/30 transition-colors ${
-                        isEven ? 'bg-background' : 'bg-muted/10'
-                      } ${issue.type === 'error' ? 'border-l-4 border-l-destructive' : ''}`}
-                    >
-                      <td className="p-3">
+        <CardContent className="p-6">
+          <Accordion type="multiple" className="w-full space-y-2">
+            {paginatedIssues.map((issue, index) => {
+              const errorTag = getErrorTag(issue.message);
+              
+              return (
+                <AccordionItem 
+                  key={index} 
+                  value={`item-${index}`}
+                  className="border border-border rounded-lg overflow-hidden"
+                >
+                  <AccordionTrigger className="px-4 py-3 hover:bg-muted/50 hover:no-underline">
+                    <div className="flex items-center justify-between w-full pr-4">
+                      <div className="flex items-center gap-3">
                         <Badge variant="outline" className="font-mono">
-                          {issue.line}
+                          Line {issue.line}
                         </Badge>
-                      </td>
-                      <td className="p-3 text-foreground">
-                        {issue.adZone && issue.pht ? (
-                          <div>
-                            <div className="font-medium">Zone {issue.adZone}</div>
-                            <div className="text-sm text-muted-foreground">PHT {issue.pht}</div>
+                        {issue.adZone && issue.pht && (
+                          <div className="flex gap-2">
+                            <Badge variant="secondary">Zone {issue.adZone}</Badge>
+                            <Badge variant="secondary">PHT {issue.pht}</Badge>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground">General</span>
                         )}
-                      </td>
-                      <td className="p-3">
                         <Badge 
                           variant={issue.type === 'error' ? 'destructive' : 'secondary'}
                           className="text-xs"
                         >
                           {errorTag}
                         </Badge>
-                      </td>
-                      <td className="p-3 text-foreground max-w-xs">
-                        <div className="break-words">
-                          {issue.message.replace(/[{}]/g, '')}
+                      </div>
+                      <Badge variant="destructive" className="ml-2">
+                        FAIL
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="px-4 pb-4 pt-2 bg-muted/20">
+                    <div className="space-y-4">
+                      {/* Error Details Table */}
+                      <div className="border border-border rounded-lg overflow-hidden">
+                        <table className="w-full text-sm">
+                          <tbody>
+                            <tr className="border-b border-border">
+                              <td className="p-3 font-semibold bg-muted/50 w-32">Tag</td>
+                              <td className="p-3 text-foreground">
+                                {issue.field || 'XML Structure'}
+                              </td>
+                            </tr>
+                            <tr className="border-b border-border">
+                              <td className="p-3 font-semibold bg-muted/50">Attribute</td>
+                              <td className="p-3 text-foreground">
+                                {errorTag === 'Dimension-Mismatch' ? 'width, height' : 'Various'}
+                              </td>
+                            </tr>
+                            <tr className="border-b border-border">
+                              <td className="p-3 font-semibold bg-muted/50">Error Type</td>
+                              <td className="p-3">
+                                <Badge variant="destructive">{errorTag}</Badge>
+                              </td>
+                            </tr>
+                            <tr className="border-b border-border">
+                              <td className="p-3 font-semibold bg-muted/50">Expected</td>
+                              <td className="p-3 text-foreground">
+                                {errorTag === 'Dimension-Mismatch' && issue.message.includes('declares') ? (
+                                  <span className="font-mono">{issue.message.match(/declares (\d+x\d+)/)?.[1] || 'N/A'}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">See description</span>
+                                )}
+                              </td>
+                            </tr>
+                            <tr className="border-b border-border">
+                              <td className="p-3 font-semibold bg-muted/50">Actual</td>
+                              <td className="p-3 text-foreground">
+                                {errorTag === 'Dimension-Mismatch' && issue.message.includes('actual is') ? (
+                                  <span className="font-mono text-destructive">{issue.message.match(/actual is (\d+x\d+)/)?.[1] || 'N/A'}</span>
+                                ) : (
+                                  <span className="text-muted-foreground">See description</span>
+                                )}
+                              </td>
+                            </tr>
+                            <tr>
+                              <td className="p-3 font-semibold bg-muted/50">Why Failed</td>
+                              <td className="p-3 text-foreground">
+                                {issue.message.replace(/[{}]/g, '')}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* XML Line Preview */}
+                      <div>
+                        <div className="text-xs font-semibold text-muted-foreground mb-2">XML Content:</div>
+                        <div className="bg-destructive/5 border border-destructive/20 p-3 rounded font-mono text-xs">
+                          <div className="text-destructive font-semibold mb-1">ERROR LINE {issue.line}:</div>
+                          <div className="whitespace-pre-wrap break-all text-foreground">
+                            {getXMLLinePreview(issue.line)}
+                          </div>
                         </div>
-                      </td>
-                      <td className="p-3 text-foreground">
-                        {errorTag === 'Dimension-Mismatch' && issue.message.includes('declares') ? (
-                          <div className="text-sm">
-                            {issue.message.match(/declares (\d+x\d+)/)?.[1] || 'N/A'}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">N/A</span>
-                        )}
-                      </td>
-                      <td className="p-3 text-foreground">
-                        {errorTag === 'Dimension-Mismatch' && issue.message.includes('actual is') ? (
-                          <div className="text-sm">
-                            {issue.message.match(/actual is (\d+x\d+)/)?.[1] || 'N/A'}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">N/A</span>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <Badge variant="destructive">
-                          FAIL
-                        </Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         </CardContent>
       </Card>
-
-      {/* XML Line Details */}
-      {paginatedIssues.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-foreground">XML Line Details</CardTitle>
-            <CardDescription>Full XML content for validation errors</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {paginatedIssues.map((issue, index) => (
-                <div
-                  key={index}
-                  className="p-4 rounded-lg border border-border bg-muted/20"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="outline">Line {issue.line}</Badge>
-                    <Badge variant={issue.type === 'error' ? 'destructive' : 'secondary'}>
-                      {getErrorTag(issue.message)}
-                    </Badge>
-                  </div>
-                  <div className="bg-destructive/5 border border-destructive/20 p-3 rounded font-mono text-sm text-foreground">
-                    <div className="text-destructive font-semibold mb-1">ERROR LINE:</div>
-                    <div className="whitespace-pre-wrap break-all">
-                      {getXMLLinePreview(issue.line)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
