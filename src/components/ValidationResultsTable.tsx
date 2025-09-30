@@ -153,7 +153,7 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Validation Issues Details with Accordion */}
-      <Card>
+      <Card className="bg-card/50 border-border/50">
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
@@ -199,10 +199,16 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
         </CardHeader>
       </Card>
 
-      {/* Issues Accordion */}
-      <Card>
+      {/* Report Container */}
+      <Card className="bg-card/50 border-border/50">
+        <CardHeader>
+          <CardTitle className="text-lg text-foreground">Validation Report</CardTitle>
+          <CardDescription>
+            Expand each item below to see detailed validation failure information including tags, attributes, expected vs actual values, and XML content.
+          </CardDescription>
+        </CardHeader>
         <CardContent className="p-6">
-          <Accordion type="multiple" className="w-full space-y-2">
+          <Accordion type="single" collapsible className="w-full space-y-2">
             {paginatedIssues.map((issue, index) => {
               const errorTag = getErrorTag(issue.message);
               
@@ -210,9 +216,9 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
                 <AccordionItem 
                   key={index} 
                   value={`item-${index}`}
-                  className="border border-border rounded-lg overflow-hidden"
+                  className="border border-destructive/30 bg-destructive/5 rounded-lg overflow-hidden transition-all duration-200 hover:border-destructive/50 hover:bg-destructive/10"
                 >
-                  <AccordionTrigger className="px-4 py-3 hover:bg-muted/50 hover:no-underline">
+                  <AccordionTrigger className="px-4 py-3 hover:bg-destructive/10 hover:no-underline transition-colors">
                     <div className="flex items-center justify-between w-full pr-4">
                       <div className="flex items-center gap-3">
                         <Badge variant="outline" className="font-mono">
@@ -236,32 +242,32 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
                       </Badge>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-4 pt-2 bg-muted/20">
+                  <AccordionContent className="px-4 pb-4 pt-2 bg-destructive/5">
                     <div className="space-y-4">
                       {/* Error Details Table */}
-                      <div className="border border-border rounded-lg overflow-hidden">
+                      <div className="border border-destructive/20 rounded-lg overflow-hidden bg-card/50">
                         <table className="w-full text-sm">
                           <tbody>
-                            <tr className="border-b border-border">
-                              <td className="p-3 font-semibold bg-muted/50 w-32">Tag</td>
+                            <tr className="border-b border-destructive/10">
+                              <td className="p-3 font-semibold bg-muted/30 w-32">Tag</td>
                               <td className="p-3 text-foreground">
                                 {issue.field || 'XML Structure'}
                               </td>
                             </tr>
-                            <tr className="border-b border-border">
-                              <td className="p-3 font-semibold bg-muted/50">Attribute</td>
+                            <tr className="border-b border-destructive/10">
+                              <td className="p-3 font-semibold bg-muted/30">Attribute</td>
                               <td className="p-3 text-foreground">
                                 {errorTag === 'Dimension-Mismatch' ? 'width, height' : 'Various'}
                               </td>
                             </tr>
-                            <tr className="border-b border-border">
-                              <td className="p-3 font-semibold bg-muted/50">Error Type</td>
+                            <tr className="border-b border-destructive/10">
+                              <td className="p-3 font-semibold bg-muted/30">Error Type</td>
                               <td className="p-3">
-                                <Badge variant="destructive">{errorTag}</Badge>
+                                <Badge variant="destructive" className="bg-destructive/90">{errorTag}</Badge>
                               </td>
                             </tr>
-                            <tr className="border-b border-border">
-                              <td className="p-3 font-semibold bg-muted/50">Expected</td>
+                            <tr className="border-b border-destructive/10">
+                              <td className="p-3 font-semibold bg-muted/30">Expected</td>
                               <td className="p-3 text-foreground">
                                 {errorTag === 'Dimension-Mismatch' && issue.message.includes('declares') ? (
                                   <span className="font-mono">{issue.message.match(/declares (\d+x\d+)/)?.[1] || 'N/A'}</span>
@@ -270,19 +276,19 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
                                 )}
                               </td>
                             </tr>
-                            <tr className="border-b border-border">
-                              <td className="p-3 font-semibold bg-muted/50">Actual</td>
+                            <tr className="border-b border-destructive/10">
+                              <td className="p-3 font-semibold bg-muted/30">Actual</td>
                               <td className="p-3 text-foreground">
                                 {errorTag === 'Dimension-Mismatch' && issue.message.includes('actual is') ? (
-                                  <span className="font-mono text-destructive">{issue.message.match(/actual is (\d+x\d+)/)?.[1] || 'N/A'}</span>
+                                  <span className="font-mono text-destructive font-bold">{issue.message.match(/actual is (\d+x\d+)/)?.[1] || 'N/A'}</span>
                                 ) : (
                                   <span className="text-muted-foreground">See description</span>
                                 )}
                               </td>
                             </tr>
                             <tr>
-                              <td className="p-3 font-semibold bg-muted/50">Why Failed</td>
-                              <td className="p-3 text-foreground">
+                              <td className="p-3 font-semibold bg-muted/30">Why Failed</td>
+                              <td className="p-3 text-destructive font-medium">
                                 {issue.message.replace(/[{}]/g, '')}
                               </td>
                             </tr>
@@ -293,8 +299,8 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
                       {/* XML Line Preview */}
                       <div>
                         <div className="text-xs font-semibold text-muted-foreground mb-2">XML Content:</div>
-                        <div className="bg-destructive/5 border border-destructive/20 p-3 rounded font-mono text-xs">
-                          <div className="text-destructive font-semibold mb-1">ERROR LINE {issue.line}:</div>
+                        <div className="bg-destructive/10 border border-destructive/30 p-3 rounded font-mono text-xs">
+                          <div className="text-destructive font-bold mb-1">ERROR LINE {issue.line}:</div>
                           <div className="whitespace-pre-wrap break-all text-foreground">
                             {getXMLLinePreview(issue.line)}
                           </div>
@@ -311,7 +317,7 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <Card>
+        <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
