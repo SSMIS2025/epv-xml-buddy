@@ -9,10 +9,12 @@ import { toast } from '@/hooks/use-toast';
 
 interface ValidationResultsTableProps {
   errors: ValidationError[];
+  warnings?: ValidationError[];
+  xmlLines: string[];
   fileName: string;
 }
 
-export function ValidationResultsTable({ errors, fileName }: ValidationResultsTableProps) {
+export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileName }: ValidationResultsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [filterAdZone, setFilterAdZone] = useState<string>('all');
   const [filterType, setFilterType] = useState<string>('all');
