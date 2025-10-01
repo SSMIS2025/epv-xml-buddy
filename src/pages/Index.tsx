@@ -6,7 +6,7 @@ import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { FileUpload } from '@/components/FileUpload';
 import { ValidationDashboard } from '@/components/ValidationDashboard';
 import { validateEPGXML } from '@/utils/xmlValidator';
-import { ValidationResult } from '@/types/validation';
+import { ValidationResult, MockFileData } from '@/types/validation';
 import { ValidationResultsTable } from '@/components/ValidationResultsTable';
 import { Header } from '@/components/Header';
 import { FileText, RotateCcw, Home } from 'lucide-react';
@@ -39,7 +39,7 @@ const Index = () => {
     setShowWelcome(false);
   };
 
-  const handleFileSelect = async (content: string, name: string) => {
+  const handleFileSelect = async (content: string, name: string, mockDatabase?: Record<string, MockFileData>) => {
     setXmlContent(content);
     setFileName(name);
     setXmlLines(content.split('\n'));
@@ -49,7 +49,7 @@ const Index = () => {
       // Add a small delay to show loading state
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const result = validateEPGXML(content);
+      const result = validateEPGXML(content, mockDatabase);
       setValidationResult(result);
       
       // Save to history

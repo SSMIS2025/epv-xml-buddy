@@ -1,8 +1,10 @@
-import { ValidationResult, ValidationError, EPGData } from '@/types/validation';
+import { ValidationResult, ValidationError, EPGData, MockFileData } from '@/types/validation';
 import { mockFileDatabase } from '@/data/mockFiles';
 import { PHT_VALIDATION_RULES, validateGenre, validateLanguage, validateTimeFormat } from '@/config/phtValidationRules';
 
-export function validateEPGXML(xmlContent: string): ValidationResult {
+export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<string, MockFileData>): ValidationResult {
+  // Use custom database if provided, otherwise fall back to default
+  const fileDatabase = customMockDatabase || mockFileDatabase;
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
   const lines = xmlContent.split('\n');
@@ -144,7 +146,7 @@ export function validateEPGXML(xmlContent: string): ValidationResult {
         const endTimeElement = advertInfo.querySelector('adsExpirationTime');
 
         if (imageElement) {
-          validateImageElementWithPHT(imageElement, lines, errors, index + 1, pht, adIndex + 1, phtRules, imageIds);
+          validateImageElementWithPHT(imageElement, lines, errors, index + 1, pht, adIndex + 1, phtRules, imageIds, fileDatabase);
         }
 
         if (animateElement && phtRules) {
@@ -277,7 +279,8 @@ function validateImageElementWithPHT(
   pht: number,
   adIndex: number,
   phtRules: any,
-  imageIds: Set<string>
+  imageIds: Set<string>,
+  fileDatabase: Record<string, MockFileData>
 ) {
   // Validate all required attributes for this PHT type
   Object.entries(phtRules.imageAttributes).forEach(([attr, rules]: [string, any]) => {
@@ -368,8 +371,8 @@ function validateImageElementWithPHT(
   const xmlWidth = parseInt(imageElement.getAttribute('w') || '0');
   const xmlHeight = parseInt(imageElement.getAttribute('h') || '0');
 
-  if (fileName && mockFileDatabase[fileName]) {
-    const mockFile = mockFileDatabase[fileName];
+  if (fileName && fileDatabase[fileName]) {
+    const mockFile = fileDatabase[fileName];
     
     if (xmlWidth !== mockFile.actualWidth || xmlHeight !== mockFile.actualHeight) {
       errors.push({
