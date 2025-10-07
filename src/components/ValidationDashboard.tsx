@@ -93,7 +93,7 @@ export const ValidationDashboard = ({ result, fileName, selectedPHT, onPHTFilter
               <div className="flex items-center justify-center gap-6">
                 {result.isValid ? (
                   <>
-                    <CheckCircle className="w-16 h-16 text-green-600 animate-bounce" />
+                    <div className="text-6xl animate-bounce">😊</div>
                     <div className="text-center">
                       <div className="text-3xl font-bold text-green-700 mb-2">Validation Passed ✓</div>
                       <div className="text-green-600">All checks completed successfully</div>
@@ -101,10 +101,10 @@ export const ValidationDashboard = ({ result, fileName, selectedPHT, onPHTFilter
                   </>
                 ) : (
                   <>
-                    <XCircle className="w-16 h-16 text-red-600 animate-[pulse_1s_ease-in-out_infinite]" />
+                    <div className="text-6xl animate-[pulse_1.5s_ease-in-out_infinite]">😢</div>
                     <div className="text-center">
                       <div className="text-3xl font-bold text-red-700 mb-2 animate-[pulse_1s_ease-in-out_infinite]">
-                        ❤️ Validation Failed
+                        Validation Failed
                       </div>
                       <div className="text-red-600">Please review the errors below</div>
                     </div>

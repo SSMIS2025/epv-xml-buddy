@@ -56,6 +56,34 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
     return 'Validation-Error';
   };
 
+  // Extract actual tag and attribute from error message
+  const parseErrorDetails = (issue: ValidationError) => {
+    let tag = issue.field || 'XML Structure';
+    let attribute = 'Various';
+    
+    if (issue.message.includes('{File-Not-Found}')) {
+      tag = 'image';
+      attribute = 'fileName';
+    } else if (issue.message.includes('{Dimension-Mismatch}')) {
+      tag = 'image';
+      attribute = 'w, h (width, height)';
+    } else if (issue.message.includes('Invalid') && issue.field) {
+      tag = issue.field.split('.')[0] || 'image';
+      const attrMatch = issue.message.match(/attribute '([^']+)'/i) || 
+                       issue.message.match(/field '([^']+)'/i);
+      if (attrMatch) {
+        attribute = attrMatch[1];
+      } else if (issue.field.includes('.')) {
+        attribute = issue.field.split('.').slice(1).join('.');
+      }
+    } else if (issue.message.includes('Missing') && issue.field) {
+      tag = issue.field;
+      attribute = 'Required element';
+    }
+    
+    return { tag, attribute };
+  };
+
   const getXMLLinePreview = (lineNumber: number) => {
     const line = xmlLines[lineNumber - 1];
     if (!line) return 'Line not found';
@@ -199,18 +227,112 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
         </CardHeader>
       </Card>
 
+      {/* Summary Table grouped by AdZone and PHT */}
+      <Card className="bg-card/50 border-border/50">
+        <CardHeader>
+          <CardTitle className="text-lg text-foreground flex items-center gap-2">
+            <Table className="w-5 h-5" />
+            Error Summary by Zone & PHT
+          </CardTitle>
+          <CardDescription>
+            Overview of validation errors organized by AdZone and PHT type
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/30">
+                <tr className="border-b">
+                  <th className="p-3 text-left font-semibold">AdZone</th>
+                  <th className="p-3 text-left font-semibold">PHT Type</th>
+                  <th className="p-3 text-left font-semibold">PHT Name</th>
+                  <th className="p-3 text-center font-semibold">Total Errors</th>
+                  <th className="p-3 text-left font-semibold">Error Types</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const grouped = new Map<string, {
+                    adZone: number;
+                    pht: number;
+                    count: number;
+                    errorTypes: Set<string>;
+                  }>();
+                  
+                  filteredIssues.forEach(issue => {
+                    if (issue.adZone && issue.pht) {
+                      const key = `${issue.adZone}-${issue.pht}`;
+                      if (!grouped.has(key)) {
+                        grouped.set(key, {
+                          adZone: issue.adZone,
+                          pht: issue.pht,
+                          count: 0,
+                          errorTypes: new Set()
+                        });
+                      }
+                      const entry = grouped.get(key)!;
+                      entry.count++;
+                      entry.errorTypes.add(getErrorTag(issue.message));
+                    }
+                  });
+                  
+                  return Array.from(grouped.values())
+                    .sort((a, b) => a.adZone - b.adZone || a.pht - b.pht)
+                    .map((entry, idx) => (
+                      <tr key={idx} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
+                        <td className="p-3">
+                          <Badge variant="secondary">Zone {entry.adZone}</Badge>
+                        </td>
+                        <td className="p-3">
+                          <Badge variant="secondary">PHT {entry.pht}</Badge>
+                        </td>
+                        <td className="p-3 text-muted-foreground">
+                          {getPHTName(entry.pht)}
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge variant="destructive" className="font-bold">
+                            {entry.count}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-wrap gap-1">
+                            {Array.from(entry.errorTypes).map((type, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">
+                                {type}
+                              </Badge>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ));
+                })()}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Report Container */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader>
-          <CardTitle className="text-lg text-foreground">Validation Report</CardTitle>
-          <CardDescription>
-            Expand each item below to see detailed validation failure information including tags, attributes, expected vs actual values, and XML content.
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg text-foreground">Validation Report</CardTitle>
+              <CardDescription>
+                Expand each item to see detailed validation failure information including tags, attributes, and XML content.
+              </CardDescription>
+            </div>
+            <div className="text-sm text-muted-foreground font-medium">
+              Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredIssues.length)} of {filteredIssues.length} issues
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-6">
           <Accordion type="single" collapsible className="w-full space-y-2">
             {paginatedIssues.map((issue, index) => {
               const errorTag = getErrorTag(issue.message);
+              const { tag, attribute } = parseErrorDetails(issue);
+              const serialNumber = startIndex + index + 1;
               
               return (
                 <AccordionItem 
@@ -221,6 +343,9 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
                   <AccordionTrigger className="px-4 py-3 hover:bg-destructive/10 hover:no-underline transition-colors">
                     <div className="flex items-center justify-between w-full pr-4">
                       <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="font-mono bg-background">
+                          #{serialNumber}
+                        </Badge>
                         <Badge variant="outline" className="font-mono">
                           Line {issue.line}
                         </Badge>
@@ -250,14 +375,14 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
                           <tbody>
                             <tr className="border-b border-destructive/10">
                               <td className="p-3 font-semibold bg-muted/30 w-32">Tag</td>
-                              <td className="p-3 text-foreground">
-                                {issue.field || 'XML Structure'}
+                              <td className="p-3 text-foreground font-mono">
+                                {tag}
                               </td>
                             </tr>
                             <tr className="border-b border-destructive/10">
                               <td className="p-3 font-semibold bg-muted/30">Attribute</td>
-                              <td className="p-3 text-foreground">
-                                {errorTag === 'Dimension-Mismatch' ? 'width, height' : 'Various'}
+                              <td className="p-3 text-foreground font-mono">
+                                {attribute}
                               </td>
                             </tr>
                             <tr className="border-b border-destructive/10">
@@ -266,28 +391,8 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
                                 <Badge variant="destructive" className="bg-destructive/90">{errorTag}</Badge>
                               </td>
                             </tr>
-                            <tr className="border-b border-destructive/10">
-                              <td className="p-3 font-semibold bg-muted/30">Expected</td>
-                              <td className="p-3 text-foreground">
-                                {errorTag === 'Dimension-Mismatch' && issue.message.includes('declares') ? (
-                                  <span className="font-mono">{issue.message.match(/declares (\d+x\d+)/)?.[1] || 'N/A'}</span>
-                                ) : (
-                                  <span className="text-muted-foreground">See description</span>
-                                )}
-                              </td>
-                            </tr>
-                            <tr className="border-b border-destructive/10">
-                              <td className="p-3 font-semibold bg-muted/30">Actual</td>
-                              <td className="p-3 text-foreground">
-                                {errorTag === 'Dimension-Mismatch' && issue.message.includes('actual is') ? (
-                                  <span className="font-mono text-destructive font-bold">{issue.message.match(/actual is (\d+x\d+)/)?.[1] || 'N/A'}</span>
-                                ) : (
-                                  <span className="text-muted-foreground">See description</span>
-                                )}
-                              </td>
-                            </tr>
                             <tr>
-                              <td className="p-3 font-semibold bg-muted/30">Why Failed</td>
+                              <td className="p-3 font-semibold bg-muted/30">Description</td>
                               <td className="p-3 text-destructive font-medium">
                                 {issue.message.replace(/[{}]/g, '')}
                               </td>
@@ -319,10 +424,7 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
       {totalPages > 1 && (
         <Card className="bg-card/50 border-border/50">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredIssues.length)} of {filteredIssues.length} issues
-              </div>
+            <div className="flex items-center justify-center">
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
