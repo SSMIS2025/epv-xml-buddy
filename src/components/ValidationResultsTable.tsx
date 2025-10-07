@@ -61,24 +61,71 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
     let tag = issue.field || 'XML Structure';
     let attribute = 'Various';
     
+    // File Not Found errors
     if (issue.message.includes('{File-Not-Found}')) {
       tag = 'image';
       attribute = 'fileName';
-    } else if (issue.message.includes('{Dimension-Mismatch}')) {
+    } 
+    // Dimension Mismatch errors
+    else if (issue.message.includes('{Dimension-Mismatch}')) {
       tag = 'image';
-      attribute = 'w, h (width, height)';
-    } else if (issue.message.includes('Invalid') && issue.field) {
-      tag = issue.field.split('.')[0] || 'image';
-      const attrMatch = issue.message.match(/attribute '([^']+)'/i) || 
-                       issue.message.match(/field '([^']+)'/i);
-      if (attrMatch) {
-        attribute = attrMatch[1];
-      } else if (issue.field.includes('.')) {
-        attribute = issue.field.split('.').slice(1).join('.');
+      // Extract which dimension from message
+      if (issue.message.includes('width')) {
+        attribute = 'w (width)';
+      } else if (issue.message.includes('height')) {
+        attribute = 'h (height)';
+      } else {
+        attribute = 'w, h (width, height)';
       }
-    } else if (issue.message.includes('Missing') && issue.field) {
-      tag = issue.field;
-      attribute = 'Required element';
+    }
+    // Missing Element
+    else if (issue.message.includes('Missing element') || issue.message.includes('Missing required element')) {
+      if (issue.field) {
+        tag = issue.field.includes('.') ? issue.field.split('.')[0] : 'AdZone';
+        attribute = issue.field.includes('.') ? issue.field.split('.').slice(1).join('.') : issue.field;
+      }
+    }
+    // Missing Attribute
+    else if (issue.message.includes('Missing attribute')) {
+      const attrMatch = issue.message.match(/attribute '([^']+)'/i);
+      if (issue.field) {
+        tag = issue.field.includes('.') ? issue.field.split('.')[0] : issue.field;
+        attribute = attrMatch ? attrMatch[1] : (issue.field.includes('.') ? issue.field.split('.').slice(1).join('.') : 'attribute');
+      }
+    }
+    // Missing attribute value
+    else if (issue.message.includes('Missing value for')) {
+      const attrMatch = issue.message.match(/for attribute '([^']+)'/i) || 
+                       issue.message.match(/for '([^']+)'/i);
+      if (issue.field) {
+        tag = issue.field.includes('.') ? issue.field.split('.')[0] : issue.field;
+        attribute = attrMatch ? attrMatch[1] : 'value';
+      }
+    }
+    // Invalid values - extract proper tag and attribute
+    else if (issue.message.includes('Invalid') && issue.field) {
+      if (issue.field.includes('.')) {
+        const parts = issue.field.split('.');
+        tag = parts[0];
+        attribute = parts.slice(1).join('.');
+      } else {
+        tag = issue.field;
+        const attrMatch = issue.message.match(/attribute '([^']+)'/i) || 
+                         issue.message.match(/field '([^']+)'/i) ||
+                         issue.message.match(/Invalid ([a-zA-Z]+)/i);
+        attribute = attrMatch ? attrMatch[1] : 'value';
+      }
+    }
+    // Expected/count errors
+    else if (issue.message.includes('Expected') && issue.field) {
+      if (issue.field.includes('.')) {
+        const parts = issue.field.split('.');
+        tag = parts[0];
+        attribute = parts.slice(1).join('.');
+      } else {
+        tag = issue.field;
+        attribute = 'count';
+      }
     }
     
     return { tag, attribute };

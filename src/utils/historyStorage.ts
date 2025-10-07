@@ -10,7 +10,7 @@ export interface ValidationHistory {
 }
 
 const HISTORY_KEY = 'epg_validation_history';
-const MAX_HISTORY_ITEMS = 10;
+const MAX_HISTORY_ITEMS = 5;
 
 export const saveValidationHistory = (fileName: string, result: ValidationResult): void => {
   try {

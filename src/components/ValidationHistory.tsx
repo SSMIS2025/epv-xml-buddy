@@ -88,12 +88,12 @@ export const ValidationHistoryComponent = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-1 items-end">
                 <Badge variant={item.isValid ? "default" : "destructive"}>
                   {item.isValid ? 'Valid' : `${item.errorCount} errors`}
                 </Badge>
                 <div className="text-xs text-muted-foreground">
-                  {item.summary.totalAdZones} zones
+                  {item.summary.totalAdZones} zones • {item.summary.totalAds} ads
                 </div>
               </div>
             </div>
