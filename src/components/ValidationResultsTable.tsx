@@ -58,7 +58,7 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
 
   // Extract actual tag and attribute from error message
   const parseErrorDetails = (issue: ValidationError) => {
-    let tag = issue.field || 'XML Structure';
+    let tag = 'XML Structure';
     let attribute = 'Various';
     
     // File Not Found errors
@@ -78,6 +78,16 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
         attribute = 'w, h (width, height)';
       }
     }
+    // Missing-Attribute (empty or missing attribute value)
+    else if (issue.message.includes('Missing-Attribute') || issue.message.includes('Missing attribute')) {
+      // Extract attribute name from message like "Missing 'zOrder' attribute"
+      const attrMatch = issue.message.match(/Missing '([^']+)'/i) || 
+                       issue.message.match(/attribute '([^']+)'/i);
+      
+      // Tag is always 'image' for attribute errors in this context
+      tag = 'image';
+      attribute = attrMatch ? attrMatch[1] : (issue.field || 'attribute');
+    }
     // Missing Element
     else if (issue.message.includes('Missing element') || issue.message.includes('Missing required element')) {
       if (issue.field) {
@@ -85,22 +95,12 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
         attribute = issue.field.includes('.') ? issue.field.split('.').slice(1).join('.') : issue.field;
       }
     }
-    // Missing Attribute
-    else if (issue.message.includes('Missing attribute')) {
-      const attrMatch = issue.message.match(/attribute '([^']+)'/i);
-      if (issue.field) {
-        tag = issue.field.includes('.') ? issue.field.split('.')[0] : issue.field;
-        attribute = attrMatch ? attrMatch[1] : (issue.field.includes('.') ? issue.field.split('.').slice(1).join('.') : 'attribute');
-      }
-    }
-    // Missing attribute value
+    // Missing value for attribute
     else if (issue.message.includes('Missing value for')) {
       const attrMatch = issue.message.match(/for attribute '([^']+)'/i) || 
                        issue.message.match(/for '([^']+)'/i);
-      if (issue.field) {
-        tag = issue.field.includes('.') ? issue.field.split('.')[0] : issue.field;
-        attribute = attrMatch ? attrMatch[1] : 'value';
-      }
+      tag = 'image';
+      attribute = attrMatch ? attrMatch[1] : (issue.field || 'value');
     }
     // Invalid values - extract proper tag and attribute
     else if (issue.message.includes('Invalid') && issue.field) {
@@ -125,6 +125,16 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
       } else {
         tag = issue.field;
         attribute = 'count';
+      }
+    }
+    // Fallback: use field if available
+    else if (issue.field) {
+      if (issue.field.includes('.')) {
+        const parts = issue.field.split('.');
+        tag = parts[0];
+        attribute = parts.slice(1).join('.');
+      } else {
+        tag = issue.field;
       }
     }
     
