@@ -58,7 +58,7 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
 
   // Extract actual tag and attribute from error message
   const parseErrorDetails = (issue: ValidationError) => {
-    let tag = 'XML Structure';
+    let tag = 'image'; // Default to 'image' as most errors are image-related
     let attribute = 'Various';
     
     // File Not Found errors
@@ -84,7 +84,6 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
       const attrMatch = issue.message.match(/Missing '([^']+)'/i) || 
                        issue.message.match(/attribute '([^']+)'/i);
       
-      // Tag is always 'image' for attribute errors in this context
       tag = 'image';
       attribute = attrMatch ? attrMatch[1] : (issue.field || 'attribute');
     }
@@ -109,11 +108,18 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
         tag = parts[0];
         attribute = parts.slice(1).join('.');
       } else {
-        tag = issue.field;
-        const attrMatch = issue.message.match(/attribute '([^']+)'/i) || 
-                         issue.message.match(/field '([^']+)'/i) ||
-                         issue.message.match(/Invalid ([a-zA-Z]+)/i);
-        attribute = attrMatch ? attrMatch[1] : 'value';
+        // Check if field is just an attribute name (w, h, zOrder, etc.)
+        const commonAttributes = ['w', 'h', 'x', 'y', 'zOrder', 'type', 'fileName', 'resolution', 'duration', 'align', 'style'];
+        if (commonAttributes.includes(issue.field)) {
+          tag = 'image';
+          attribute = issue.field;
+        } else {
+          tag = issue.field;
+          const attrMatch = issue.message.match(/attribute '([^']+)'/i) || 
+                           issue.message.match(/field '([^']+)'/i) ||
+                           issue.message.match(/Invalid ([a-zA-Z]+)/i);
+          attribute = attrMatch ? attrMatch[1] : 'value';
+        }
       }
     }
     // Expected/count errors
@@ -129,12 +135,18 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
     }
     // Fallback: use field if available
     else if (issue.field) {
-      if (issue.field.includes('.')) {
+      // Check if field is just an attribute name
+      const commonAttributes = ['w', 'h', 'x', 'y', 'zOrder', 'type', 'fileName', 'resolution', 'duration', 'align', 'style'];
+      if (commonAttributes.includes(issue.field)) {
+        tag = 'image';
+        attribute = issue.field;
+      } else if (issue.field.includes('.')) {
         const parts = issue.field.split('.');
         tag = parts[0];
         attribute = parts.slice(1).join('.');
       } else {
         tag = issue.field;
+        attribute = 'Various';
       }
     }
     

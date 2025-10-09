@@ -132,7 +132,7 @@ export function WelcomeScreen({ onAccept }: WelcomeScreenProps) {
             </div>
           </CardContent>
 
-          <CardFooter className="pt-6">
+          <CardFooter className="pt-6 flex flex-col gap-3">
             <Button 
               onClick={handleAccept}
               disabled={!accepted}
@@ -140,6 +140,13 @@ export function WelcomeScreen({ onAccept }: WelcomeScreenProps) {
               size="lg"
             >
               Accept Terms & Start Validation
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => window.location.href = '/about'}
+              className="w-full"
+            >
+              View Terms & Privacy Policy
             </Button>
           </CardFooter>
         </Card>

@@ -49,12 +49,19 @@ export function Header({ onLogoClick }: HeaderProps) {
             </div>
           </div>
 
-          {/* Current Time */}
-          <div className="text-right">
-            <div className="text-sm font-mono text-foreground bg-muted/50 px-3 py-1 rounded">
-              {currentTime}
+          {/* Right Side: Version and Time */}
+          <div className="flex items-center gap-4">
+            <div className="text-xs font-medium text-muted-foreground bg-muted/50 px-3 py-1 rounded">
+              v1.0.0
             </div>
-            <div className="text-xs text-muted-foreground mt-1">Live Time</div>
+            
+            {/* Current Time */}
+            <div className="text-right">
+              <div className="text-sm font-mono text-foreground bg-muted/50 px-3 py-1 rounded">
+                {currentTime}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1">Live Time</div>
+            </div>
           </div>
         </div>
       </div>

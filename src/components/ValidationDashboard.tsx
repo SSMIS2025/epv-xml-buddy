@@ -88,25 +88,25 @@ export const ValidationDashboard = ({ result, fileName, selectedPHT, onPHTFilter
     <div className="space-y-6">
       <>
           {/* Large Validation Status Banner */}
-          <Card className={`relative overflow-hidden border-2 ${result.isValid ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
+          <Card className={`relative overflow-hidden border-2 ${result.isValid ? 'border-green-500 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20' : 'border-red-500 bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20'}`}>
             <CardContent className="p-8">
               <div className="flex items-center justify-center gap-6">
                 {result.isValid ? (
                   <>
                     <div className="text-6xl animate-bounce">😊</div>
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-green-700 mb-2">Validation Passed ✓</div>
-                      <div className="text-green-600">All checks completed successfully</div>
+                      <div className="text-3xl font-bold text-green-700 dark:text-green-300 mb-2">Validation Passed ✓</div>
+                      <div className="text-green-600 dark:text-green-400">All checks completed successfully</div>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="text-6xl animate-[pulse_1.5s_ease-in-out_infinite]">😢</div>
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-red-700 mb-2 animate-[pulse_1s_ease-in-out_infinite]">
+                      <div className="text-3xl font-bold text-red-700 dark:text-red-300 mb-2 animate-[pulse_1s_ease-in-out_infinite]">
                         Validation Failed
                       </div>
-                      <div className="text-red-600">Please review the errors below</div>
+                      <div className="text-red-600 dark:text-red-400">Please review the errors below</div>
                     </div>
                   </>
                 )}
@@ -116,7 +116,7 @@ export const ValidationDashboard = ({ result, fileName, selectedPHT, onPHTFilter
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
-            <Card>
+            <Card className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Total Errors
@@ -132,7 +132,7 @@ export const ValidationDashboard = ({ result, fileName, selectedPHT, onPHTFilter
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   AdZones Status
@@ -158,7 +158,7 @@ export const ValidationDashboard = ({ result, fileName, selectedPHT, onPHTFilter
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Ads Status
@@ -185,7 +185,7 @@ export const ValidationDashboard = ({ result, fileName, selectedPHT, onPHTFilter
             </Card>
           </div>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/20 dark:to-gray-950/20 border-slate-200 dark:border-slate-800">
             <CardContent className="p-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-2">

@@ -8,6 +8,7 @@ import { ValidationDashboard } from '@/components/ValidationDashboard';
 import { validateEPGXML } from '@/utils/xmlValidator';
 import { ValidationResult, MockFileData } from '@/types/validation';
 import { ValidationResultsTable } from '@/components/ValidationResultsTable';
+import { PHTPresenceTable } from '@/components/PHTPresenceTable';
 import { Header } from '@/components/Header';
 import { FileText, RotateCcw, Home } from 'lucide-react';
 import { saveValidationHistory } from '@/utils/historyStorage';
@@ -88,6 +89,8 @@ const Index = () => {
 
   const handleRestart = () => {
     handleClearFile();
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (showWelcome) {
@@ -95,11 +98,11 @@ const Index = () => {
   }
 
   return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
-          <Header />
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+          <Header onLogoClick={handleRestart} />
           <main className="container mx-auto px-4 py-4 lg:py-8">
         {/* Header */}
-        <Card className="mb-8 border-0 shadow-lg bg-card/95 backdrop-blur-sm">
+        <Card className="mb-8 border-0 shadow-lg bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 backdrop-blur-sm">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -122,7 +125,10 @@ const Index = () => {
                 )}
                 <Button 
                   variant="ghost" 
-                  onClick={() => setShowWelcome(true)}
+                  onClick={() => {
+                    setShowWelcome(true);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="text-muted-foreground"
                 >
                   <Home className="w-4 h-4 mr-2" />
@@ -167,14 +173,42 @@ const Index = () => {
                 onPHTFilterChange={setSelectedPHT}
               />
 
-              {/* Detailed Results */}
-              <ValidationResultsTable 
-                errors={validationResult.errors}
-                warnings={validationResult.warnings}
-                xmlLines={xmlLines}
-                fileName={fileName}
-                selectedPHT={selectedPHT}
+              {/* PHT Presence Table */}
+              <PHTPresenceTable 
+                presentPHTs={Array.from(new Set(validationResult.errors.map(e => e.pht).filter(Boolean))) as number[]}
               />
+
+              {/* Detailed Results */}
+              {(() => {
+                const filteredErrors = validationResult.errors.filter(error => {
+                  if (selectedPHT === 'all') return true;
+                  return error.pht === parseInt(selectedPHT);
+                });
+
+                if (filteredErrors.length === 0 && selectedPHT !== 'all') {
+                  return (
+                    <Card className="animate-slide-up bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
+                      <CardContent className="p-8 text-center">
+                        <div className="text-6xl mb-4 animate-bounce">🎉</div>
+                        <h3 className="text-2xl font-bold mb-2 text-green-700 dark:text-green-300">No Issues Found</h3>
+                        <p className="text-green-600 dark:text-green-400">
+                          PHT {selectedPHT} has no validation errors!
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+
+                return (
+                  <ValidationResultsTable 
+                    errors={validationResult.errors}
+                    warnings={validationResult.warnings}
+                    xmlLines={xmlLines}
+                    fileName={fileName}
+                    selectedPHT={selectedPHT}
+                  />
+                );
+              })()}
             </>
           )}
 
