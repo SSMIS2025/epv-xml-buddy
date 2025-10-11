@@ -108,82 +108,57 @@ export const ValidationDashboard = ({ result, fileName, selectedPHT, onPHTFilter
                       </div>
                       <div className="text-red-600 dark:text-red-400">Please review the errors below</div>
                     </div>
+                    <div className="ml-8 text-center">
+                      <div className="text-sm text-red-600 dark:text-red-400 mb-1">Total Errors</div>
+                      <div className="text-6xl font-bold text-red-700 dark:text-red-300">{result.errors.length}</div>
+                    </div>
                   </>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-            <Card className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-800">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Errors
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-orange-600" />
-                  <span className="text-2xl font-bold text-orange-600">
-                    {result.errors.length}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-950/20 dark:to-cyan-950/20 border-blue-200 dark:border-blue-800">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  AdZones Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>Expected:</span>
-                    <span className="font-medium">{result.summary.expectedAdZones}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Actual:</span>
-                    <span className="font-medium">{result.summary.totalAdZones}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Status:</span>
-                    <Badge variant={result.summary.expectedAdZones === result.summary.totalAdZones ? "default" : "destructive"}>
-                      {result.summary.expectedAdZones === result.summary.totalAdZones ? "Match" : "Mismatch"}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-purple-200 dark:border-purple-800">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Ads Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>Expected:</span>
-                    <span className="font-medium">{result.summary.expectedAds}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Actual:</span>
-                    <span className="font-medium">{result.summary.totalAds}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Status:</span>
-                    <Badge variant={result.summary.expectedAds === result.summary.totalAds ? "default" : "destructive"}>
-                      {result.summary.expectedAds === result.summary.totalAds ? "Match" : "Mismatch"}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Validation Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left p-3 font-semibold">Metric</th>
+                      <th className="text-center p-3 font-semibold">Expected</th>
+                      <th className="text-center p-3 font-semibold">Actual</th>
+                      <th className="text-center p-3 font-semibold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-border hover:bg-accent/50 transition-colors">
+                      <td className="p-3 font-medium">AdZones</td>
+                      <td className="text-center p-3">{result.summary.expectedAdZones}</td>
+                      <td className="text-center p-3">{result.summary.totalAdZones}</td>
+                      <td className="text-center p-3">
+                        <Badge variant={result.summary.expectedAdZones === result.summary.totalAdZones ? "default" : "destructive"}>
+                          {result.summary.expectedAdZones === result.summary.totalAdZones ? "✓ Match" : "✗ Mismatch"}
+                        </Badge>
+                      </td>
+                    </tr>
+                    <tr className="hover:bg-accent/50 transition-colors">
+                      <td className="p-3 font-medium">Ads</td>
+                      <td className="text-center p-3">{result.summary.expectedAds}</td>
+                      <td className="text-center p-3">{result.summary.totalAds}</td>
+                      <td className="text-center p-3">
+                        <Badge variant={result.summary.expectedAds === result.summary.totalAds ? "default" : "destructive"}>
+                          {result.summary.expectedAds === result.summary.totalAds ? "✓ Match" : "✗ Mismatch"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
 
           <Card className="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-950/20 dark:to-gray-950/20 border-slate-200 dark:border-slate-800">
             <CardContent className="p-4">
