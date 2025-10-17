@@ -10,7 +10,7 @@ import { ValidationResult, MockFileData } from '@/types/validation';
 import { ValidationResultsTable } from '@/components/ValidationResultsTable';
 import { PHTPresenceTable } from '@/components/PHTPresenceTable';
 import { Header } from '@/components/Header';
-import { FileText, RotateCcw, Home } from 'lucide-react';
+import { FileText, RotateCcw, Home, FilePlus } from 'lucide-react';
 import { saveValidationHistory } from '@/utils/historyStorage';
 
 const Index = () => {
@@ -180,7 +180,7 @@ const Index = () => {
                 {validationResult && (
                   <>
                     <Button variant="outline" onClick={handleRestart}>
-                      <RotateCcw className="w-4 h-4 mr-2" />
+                      <FilePlus className="w-4 h-4 mr-2" />
                       New Validation
                     </Button>
                     <Button variant="secondary" onClick={handleRevalidation}>
