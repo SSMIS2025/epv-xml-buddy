@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { MockFileData } from '@/types/validation';
 
 interface FileUploadProps {
-  onFileSelect: (content: string, fileName: string, mockDatabase?: Record<string, MockFileData>) => void;
+  onFileSelect: (content: string, fileName: string, mockDatabase?: Record<string, MockFileData>, filePath?: string) => void;
   selectedFile?: string;
   onClearFile?: () => void;
 }
@@ -31,7 +31,7 @@ export function FileUpload({ onFileSelect, selectedFile, onClearFile }: FileUplo
       
       if (response.success && response.xmlContent) {
         setSystemMessage('Data loaded successfully!');
-        onFileSelect(response.xmlContent, response.fileName, response.mockDatabase);
+        onFileSelect(response.xmlContent, response.fileName, response.mockDatabase, response.filePath);
         setTimeout(() => setSystemMessage(''), 2000);
       } else {
         setSystemMessage(response.error || 'Failed to load data from system. Please use file upload.');

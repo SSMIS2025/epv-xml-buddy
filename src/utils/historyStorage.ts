@@ -3,6 +3,7 @@ import { ValidationResult } from '@/types/validation';
 export interface ValidationHistory {
   id: string;
   fileName: string;
+  filePath?: string;
   timestamp: Date;
   isValid: boolean;
   errorCount: number;
@@ -12,13 +13,14 @@ export interface ValidationHistory {
 const HISTORY_KEY = 'epg_validation_history';
 const MAX_HISTORY_ITEMS = 5;
 
-export const saveValidationHistory = (fileName: string, result: ValidationResult): void => {
+export const saveValidationHistory = (fileName: string, result: ValidationResult, filePath?: string): void => {
   try {
     const existingHistory = getValidationHistory();
     
     const newItem: ValidationHistory = {
       id: Date.now().toString(),
       fileName,
+      filePath,
       timestamp: new Date(),
       isValid: result.isValid,
       errorCount: result.errors.length,

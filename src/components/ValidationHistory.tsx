@@ -83,6 +83,11 @@ export const ValidationHistoryComponent = () => {
                 </div>
                 <div>
                   <p className="font-medium text-sm">{item.fileName}</p>
+                  {item.filePath && (
+                    <p className="text-xs text-muted-foreground truncate max-w-[300px]" title={item.filePath}>
+                      {item.filePath}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     {formatTimestamp(item.timestamp)}
                   </p>

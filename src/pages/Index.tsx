@@ -17,10 +17,12 @@ const Index = () => {
   const [showWelcome, setShowWelcome] = useState(true);
   const [xmlContent, setXmlContent] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
+  const [filePath, setFilePath] = useState<string>('');
   const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [xmlLines, setXmlLines] = useState<string[]>([]);
   const [selectedPHT, setSelectedPHT] = useState<string>('all');
+  const [revalidationCount, setRevalidationCount] = useState<number>(0);
 
   useEffect(() => {
     // Check if user has already accepted terms
@@ -40,11 +42,13 @@ const Index = () => {
     setShowWelcome(false);
   };
 
-  const handleFileSelect = async (content: string, name: string, mockDatabase?: Record<string, MockFileData>) => {
+  const handleFileSelect = async (content: string, name: string, mockDatabase?: Record<string, MockFileData>, path?: string) => {
     setXmlContent(content);
     setFileName(name);
+    setFilePath(path || '');
     setXmlLines(content.split('\n'));
     setIsValidating(true);
+    setRevalidationCount(0); // Reset revalidation count on new file
 
     try {
       // Add a small delay to show loading state
@@ -54,7 +58,7 @@ const Index = () => {
       setValidationResult(result);
       
       // Save to history
-      saveValidationHistory(name, result);
+      saveValidationHistory(name, result, path);
       
       if (result.isValid) {
         toast({
@@ -82,15 +86,71 @@ const Index = () => {
   const handleClearFile = () => {
     setXmlContent('');
     setFileName('');
+    setFilePath('');
     setValidationResult(null);
     setXmlLines([]);
     setSelectedPHT('all');
+    setRevalidationCount(0);
   };
 
   const handleRestart = () => {
     handleClearFile();
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleRevalidation = async () => {
+    if (!window.electron?.Revalidation) {
+      toast({
+        title: "Feature Not Available",
+        description: "Re-validation is only available when running in Electron mode.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsValidating(true);
+
+    try {
+      const response = await window.electron.Revalidation();
+      
+      if (response.success && response.xmlContent) {
+        setXmlContent(response.xmlContent);
+        setFileName(response.fileName);
+        setFilePath(response.filePath || '');
+        setXmlLines(response.xmlContent.split('\n'));
+        
+        const result = validateEPGXML(response.xmlContent, response.mockDatabase);
+        setValidationResult(result);
+        
+        // Increment revalidation count
+        const newCount = revalidationCount + 1;
+        setRevalidationCount(newCount);
+        
+        // Save to history
+        saveValidationHistory(response.fileName, result, response.filePath);
+        
+        toast({
+          title: "Re-validation Complete",
+          description: `Re-validation #${newCount} completed. ${result.errors.length} errors found.`,
+          variant: result.isValid ? "default" : "destructive",
+        });
+      } else {
+        toast({
+          title: "Re-validation Failed",
+          description: response.error || "Failed to fetch XML data from system.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Re-validation Error",
+        description: "An error occurred during re-validation.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsValidating(false);
+    }
   };
 
   if (showWelcome) {
@@ -118,10 +178,16 @@ const Index = () => {
               </div>
               <div className="flex gap-2">
                 {validationResult && (
-                  <Button variant="outline" onClick={handleRestart}>
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    New Validation
-                  </Button>
+                  <>
+                    <Button variant="outline" onClick={handleRestart}>
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      New Validation
+                    </Button>
+                    <Button variant="secondary" onClick={handleRevalidation}>
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Re-validation {revalidationCount > 0 && `(${revalidationCount})`}
+                    </Button>
+                  </>
                 )}
                 <Button 
                   variant="ghost" 
@@ -165,8 +231,30 @@ const Index = () => {
           {/* Validation Results */}
           {validationResult && !isValidating && (
             <>
+              {/* File Info Card */}
+              {fileName && (
+                <Card className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-950/20 dark:to-blue-950/20 border-indigo-200 dark:border-indigo-800">
+                  <CardContent className="p-4">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        <span className="font-semibold text-indigo-900 dark:text-indigo-100">File Name:</span>
+                        <span className="text-indigo-700 dark:text-indigo-300">{fileName}</span>
+                      </div>
+                      {filePath && (
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                          <span className="font-semibold text-indigo-900 dark:text-indigo-100">File Path:</span>
+                          <span className="text-indigo-700 dark:text-indigo-300 text-sm truncate" title={filePath}>{filePath}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Dashboard */}
-              <ValidationDashboard 
+              <ValidationDashboard
                 result={validationResult} 
                 fileName={fileName}
                 selectedPHT={selectedPHT}
