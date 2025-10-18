@@ -86,14 +86,22 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
     // Validate each adZone with PHT-specific rules
     let totalActualAds = 0;
     const phtGroups: { [key: number]: number[] } = {};
+    let currentLineOffset = 0; // Track position in XML
 
     adZoneElements.forEach((adZone, index) => {
+      // Find the starting line of this adZone
+      const adZoneStartLine = findLineNumberFromOffset(lines, '<adZone>', currentLineOffset);
+      currentLineOffset = adZoneStartLine;
       const phtElement = adZone.querySelector('PHT');
       const numberOfAdsElement = adZone.querySelector('numberOfAds');
       const advertInfoElements = adZone.querySelectorAll('advertInfo');
 
       const pht = phtElement ? parseInt(phtElement.textContent || '0') : 0;
       const expectedAdsInZone = numberOfAdsElement ? parseInt(numberOfAdsElement.textContent || '0') : 0;
+      
+      // Find line numbers for this specific adZone elements
+      const phtLine = findLineNumberFromOffset(lines, `<PHT>${pht}</PHT>`, adZoneStartLine);
+      const numberOfAdsLine = findLineNumberFromOffset(lines, '<numberOfAds>', adZoneStartLine);
 
       // Group PHT types for duplicate checking
       if (!phtGroups[pht]) phtGroups[pht] = [];
@@ -103,7 +111,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
       const phtRules = PHT_VALIDATION_RULES[pht];
       if (!phtRules) {
         errors.push({
-          line: findLineNumber(lines, `<PHT>${pht}</PHT>`),
+          line: phtLine,
           message: `{Invalid-PHT} PHT ${pht} is not a valid PHT type (AdZone ${index + 1})`,
           type: 'error',
           adZone: index + 1,
@@ -113,7 +121,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
         // Validate ads count for PHT type
         if (expectedAdsInZone < phtRules.minAds || expectedAdsInZone > phtRules.maxAds) {
           errors.push({
-            line: findLineNumber(lines, 'numberOfAds'),
+            line: numberOfAdsLine,
             message: `{PHT-Rule-Violation} ${phtRules.name} (PHT ${pht}) requires ${phtRules.minAds}-${phtRules.maxAds} ads but ${expectedAdsInZone} declared (AdZone ${index + 1})`,
             type: 'error',
             adZone: index + 1,
@@ -125,7 +133,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
       // Check numberOfAds vs actual advertInfo elements
       if (expectedAdsInZone !== advertInfoElements.length) {
         errors.push({
-          line: findLineNumber(lines, 'numberOfAds'),
+          line: numberOfAdsLine,
           message: `{Count-Mismatch} AdZone ${index + 1} (PHT ${pht}): Expected ${expectedAdsInZone} ads but found ${advertInfoElements.length}`,
           type: 'error',
           adZone: index + 1,
@@ -137,7 +145,11 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
 
       // Validate each advertInfo with PHT-specific rules
       const imageIds: Set<string> = new Set();
+      let advertInfoOffset = adZoneStartLine;
       advertInfoElements.forEach((advertInfo, adIndex) => {
+        // Find the starting line of this specific advertInfo
+        const advertInfoLine = findLineNumberFromOffset(lines, '<advertInfo>', advertInfoOffset);
+        advertInfoOffset = advertInfoLine + 1; // Move offset for next advertInfo
         const imageElement = advertInfo.querySelector('image');
         const animateElement = advertInfo.querySelector('animate');
         const genreElement = advertInfo.querySelector('genre');
@@ -146,11 +158,11 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
         const endTimeElement = advertInfo.querySelector('adsExpirationTime');
 
         if (imageElement) {
-          validateImageElementWithPHT(imageElement, lines, errors, index + 1, pht, adIndex + 1, phtRules, imageIds, fileDatabase);
+          validateImageElementWithPHT(imageElement, lines, errors, index + 1, pht, adIndex + 1, phtRules, imageIds, fileDatabase, advertInfoLine);
         }
 
         if (animateElement && phtRules) {
-          validateAnimateElement(animateElement, lines, errors, index + 1, pht, adIndex + 1, phtRules);
+          validateAnimateElement(animateElement, lines, errors, index + 1, pht, adIndex + 1, phtRules, advertInfoLine);
         }
 
         // Validate genre
@@ -158,7 +170,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
           const genre = genreElement.textContent || '';
           if (!validateGenre(genre)) {
             errors.push({
-              line: findLineNumber(lines, `<genre>${genre}</genre>`),
+              line: findLineNumberFromOffset(lines, `<genre>${genre}</genre>`, advertInfoLine),
               message: `{Invalid-Genre} Genre '${genre}' must be a valid decimal value like 255 or 460 (AdZone ${index + 1}, Ad ${adIndex + 1})`,
               type: 'error',
               adZone: index + 1,
@@ -172,7 +184,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
           const lang = langElement.textContent || '';
           if (!validateLanguage(lang)) {
             errors.push({
-              line: findLineNumber(lines, `<lang>${lang}</lang>`),
+              line: findLineNumberFromOffset(lines, `<lang>${lang}</lang>`, advertInfoLine),
               message: `{Invalid-Language} Language '${lang}' must be exactly 3 characters (AdZone ${index + 1}, Ad ${adIndex + 1})`,
               type: 'error',
               adZone: index + 1,
@@ -186,7 +198,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
           const startTime = startTimeElement.textContent || '';
           if (!validateTimeFormat(startTime)) {
             errors.push({
-              line: findLineNumber(lines, startTime),
+              line: findLineNumberFromOffset(lines, startTime, advertInfoLine),
               message: `{Invalid-Time-Format} Start time must follow pattern "YYYY-MM-DDTHH:MM:SS+HH:MM" (AdZone ${index + 1}, Ad ${adIndex + 1})`,
               type: 'error',
               adZone: index + 1,
@@ -199,7 +211,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
           const endTime = endTimeElement.textContent || '';
           if (!validateTimeFormat(endTime)) {
             errors.push({
-              line: findLineNumber(lines, endTime),
+              line: findLineNumberFromOffset(lines, endTime, advertInfoLine),
               message: `{Invalid-Time-Format} End time must follow pattern "YYYY-MM-DDTHH:MM:SS+HH:MM" (AdZone ${index + 1}, Ad ${adIndex + 1})`,
               type: 'error',
               adZone: index + 1,
@@ -213,7 +225,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
           phtRules.requiredTags.forEach(tagName => {
             if (!advertInfo.querySelector(tagName)) {
               errors.push({
-                line: findLineNumber(lines, 'advertInfo'),
+                line: advertInfoLine,
                 message: `{Missing-Tag} Missing <${tagName}> required for ${phtRules.name} (AdZone ${index + 1}, Ad ${adIndex + 1})`,
                 type: 'error',
                 adZone: index + 1,
@@ -280,15 +292,18 @@ function validateImageElementWithPHT(
   adIndex: number,
   phtRules: any,
   imageIds: Set<string>,
-  fileDatabase: Record<string, MockFileData>
+  fileDatabase: Record<string, MockFileData>,
+  startLine: number = 0
 ) {
+  // Find the line number for this specific image element
+  const imageLine = findLineNumberFromOffset(lines, '<image', startLine);
   // Validate all required attributes for this PHT type
   Object.entries(phtRules.imageAttributes).forEach(([attr, rules]: [string, any]) => {
     const value = imageElement.getAttribute(attr);
     
     if (rules.required && !value) {
       errors.push({
-        line: findLineNumber(lines, 'image'),
+        line: imageLine,
         message: `{Missing-Attribute} Missing '${attr}' attribute required for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
         type: 'error',
         adZone,
@@ -302,7 +317,7 @@ function validateImageElementWithPHT(
       // Check allowed values
       if (rules.allowedValues && !rules.allowedValues.includes(value)) {
         errors.push({
-          line: findLineNumber(lines, `${attr}="${value}"`),
+          line: imageLine,
           message: `{Invalid-Value} Attribute '${attr}' value '${value}' not allowed for ${phtRules.name}. Allowed: ${rules.allowedValues.join(', ')} (AdZone ${adZone}, Ad ${adIndex})`,
           type: 'error',
           adZone,
@@ -314,7 +329,7 @@ function validateImageElementWithPHT(
       // Check pattern validation
       if (rules.pattern && !rules.pattern.test(value)) {
         errors.push({
-          line: findLineNumber(lines, `${attr}="${value}"`),
+          line: imageLine,
           message: `{Pattern-Mismatch} Attribute '${attr}' value '${value}' doesn't match required pattern for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
           type: 'error',
           adZone,
@@ -326,7 +341,7 @@ function validateImageElementWithPHT(
       // Check custom validation
       if (rules.validation && !rules.validation(value)) {
         errors.push({
-          line: findLineNumber(lines, `${attr}="${value}"`),
+          line: imageLine,
           message: `{Validation-Failed} Attribute '${attr}' value '${value}' failed validation for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
           type: 'error',
           adZone,
@@ -342,7 +357,7 @@ function validateImageElementWithPHT(
   if (id) {
     if (imageIds.has(id)) {
       errors.push({
-        line: findLineNumber(lines, `id="${id}"`),
+        line: imageLine,
         message: `{Duplicate-ID} Image ID '${id}' is duplicated within ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
         type: 'error',
         adZone,
@@ -358,7 +373,7 @@ function validateImageElementWithPHT(
   const type = imageElement.getAttribute('type');
   if (type && !phtRules.allowedFileTypes.includes(type.toLowerCase())) {
     errors.push({
-      line: findLineNumber(lines, `type="${type}"`),
+      line: imageLine,
       message: `{Invalid-File-Type} File type '${type}' not allowed for ${phtRules.name}. Allowed: ${phtRules.allowedFileTypes.join(', ')} (AdZone ${adZone}, Ad ${adIndex})`,
       type: 'error',
       adZone,
@@ -376,7 +391,7 @@ function validateImageElementWithPHT(
     
     if (xmlWidth !== mockFile.actualWidth || xmlHeight !== mockFile.actualHeight) {
       errors.push({
-        line: findLineNumber(lines, fileName),
+        line: imageLine,
         message: `{Dimension-Mismatch} File ${fileName}: XML declares ${xmlWidth}x${xmlHeight} but actual dimensions are ${mockFile.actualWidth}x${mockFile.actualHeight} (AdZone ${adZone}, Ad ${adIndex})`,
         type: 'error',
         adZone,
@@ -386,7 +401,7 @@ function validateImageElementWithPHT(
     }
   } else if (fileName) {
     errors.push({
-      line: findLineNumber(lines, fileName),
+      line: imageLine,
       message: `{File-Not-Found} File ${fileName} not found in mock database (AdZone ${adZone}, Ad ${adIndex})`,
       type: 'error',
       adZone,
@@ -403,14 +418,17 @@ function validateAnimateElement(
   adZone: number,
   pht: number,
   adIndex: number,
-  phtRules: any
+  phtRules: any,
+  startLine: number = 0
 ) {
+  // Find the line number for this specific animate element
+  const animateLine = findLineNumberFromOffset(lines, '<animate', startLine);
   Object.entries(phtRules.animateAttributes).forEach(([attr, rules]: [string, any]) => {
     const value = animateElement.getAttribute(attr);
     
     if (rules.required && !value) {
       errors.push({
-        line: findLineNumber(lines, 'animate'),
+        line: animateLine,
         message: `{Missing-Attribute} Missing '${attr}' attribute in animate element for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
         type: 'error',
         adZone,
@@ -423,7 +441,7 @@ function validateAnimateElement(
     if (value) {
       if (rules.allowedValues && !rules.allowedValues.includes(value)) {
         errors.push({
-          line: findLineNumber(lines, `${attr}="${value}"`),
+          line: animateLine,
           message: `{Invalid-Value} Animate attribute '${attr}' value '${value}' not allowed for ${phtRules.name}. Allowed: ${rules.allowedValues.join(', ')} (AdZone ${adZone}, Ad ${adIndex})`,
           type: 'error',
           adZone,
@@ -434,7 +452,7 @@ function validateAnimateElement(
 
       if (rules.pattern && !rules.pattern.test(value)) {
         errors.push({
-          line: findLineNumber(lines, `${attr}="${value}"`),
+          line: animateLine,
           message: `{Pattern-Mismatch} Animate attribute '${attr}' value '${value}' doesn't match required pattern for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
           type: 'error',
           adZone,
@@ -453,4 +471,15 @@ function findLineNumber(lines: string[], searchText: string): number {
     }
   }
   return 1;
+}
+
+function findLineNumberFromOffset(lines: string[], searchText: string, startLine: number = 0): number {
+  // Start searching from the given offset line
+  for (let i = startLine; i < lines.length; i++) {
+    if (lines[i].includes(searchText)) {
+      return i + 1;
+    }
+  }
+  // If not found from offset, return the offset line or 1
+  return startLine > 0 ? startLine : 1;
 }
