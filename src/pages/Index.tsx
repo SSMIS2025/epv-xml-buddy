@@ -26,10 +26,7 @@ const Index = () => {
 
   useEffect(() => {
     // Check if user has already accepted terms
-    const hasAcceptedTerms = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('epg-validator-terms-accepted='))
-      ?.split('=')[1] === 'true';
+    const hasAcceptedTerms = localStorage.getItem('epg-validator-terms-accepted') === 'true';
     
     if (hasAcceptedTerms) {
       setShowWelcome(false);
@@ -37,8 +34,8 @@ const Index = () => {
   }, []);
 
   const handleWelcomeAccept = () => {
-    // Set cookie to remember terms acceptance
-    document.cookie = 'epg-validator-terms-accepted=true; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/';
+    // Set localStorage to remember terms acceptance
+    localStorage.setItem('epg-validator-terms-accepted', 'true');
     setShowWelcome(false);
   };
 

@@ -14,8 +14,8 @@ export function WelcomeScreen({ onAccept }: WelcomeScreenProps) {
 
   const handleAccept = () => {
     if (accepted) {
-      // Set cookie to remember user acceptance
-      document.cookie = 'epg-validator-terms-accepted=true; expires=Fri, 31 Dec 9999 23:59:59 GMT; path=/';
+      // Set localStorage to remember user acceptance
+      localStorage.setItem('epg-validator-terms-accepted', 'true');
       onAccept();
     }
   };
