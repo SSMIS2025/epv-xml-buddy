@@ -12,12 +12,12 @@ import { PHT_VALIDATION_RULES } from '@/config/phtValidationRules';
 interface ValidationResultsTableProps {
   errors: ValidationError[];
   warnings?: ValidationError[];
-  xmlLines: string[];
-  fileName: string;
-  selectedPHT: string;
+  xmlLines?: string[];
+  fileName?: string;
+  selectedPHT?: string;
 }
 
-export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileName, selectedPHT }: ValidationResultsTableProps) {
+export function ValidationResultsTable({ errors, warnings = [], xmlLines = [], fileName = 'validation', selectedPHT = 'all' }: ValidationResultsTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [filterAdZone, setFilterAdZone] = useState<string>('all');
   const itemsPerPage = 10;
@@ -154,6 +154,7 @@ export function ValidationResultsTable({ errors, warnings = [], xmlLines, fileNa
   };
 
   const getXMLLinePreview = (lineNumber: number) => {
+    if (!xmlLines.length) return 'Not available for historical data';
     const line = xmlLines[lineNumber - 1];
     if (!line) return 'Line not found';
     return line.trim();

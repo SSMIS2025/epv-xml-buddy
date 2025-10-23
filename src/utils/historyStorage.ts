@@ -8,6 +8,9 @@ export interface ValidationHistory {
   isValid: boolean;
   errorCount: number;
   summary: ValidationResult['summary'];
+  errors: ValidationResult['errors'];
+  warnings: ValidationResult['warnings'];
+  presentPHTs: ValidationResult['presentPHTs'];
 }
 
 const HISTORY_KEY = 'epg_validation_history';
@@ -24,7 +27,10 @@ export const saveValidationHistory = (fileName: string, result: ValidationResult
       timestamp: new Date(),
       isValid: result.isValid,
       errorCount: result.errors.length,
-      summary: result.summary
+      summary: result.summary,
+      errors: result.errors,
+      warnings: result.warnings,
+      presentPHTs: result.presentPHTs
     };
 
     const updatedHistory = [newItem, ...existingHistory].slice(0, MAX_HISTORY_ITEMS);

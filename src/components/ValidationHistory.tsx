@@ -2,11 +2,15 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock, FileText, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Clock, FileText, CheckCircle, XCircle, Trash2, Eye } from 'lucide-react';
 import { ValidationHistory, getValidationHistory, clearValidationHistory } from '@/utils/historyStorage';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ValidationResultsTable } from './ValidationResultsTable';
+import { PHTPresenceTable } from './PHTPresenceTable';
 
 export const ValidationHistoryComponent = () => {
   const [history, setHistory] = useState<ValidationHistory[]>([]);
+  const [selectedItem, setSelectedItem] = useState<ValidationHistory | null>(null);
 
   const loadHistory = () => {
     setHistory(getValidationHistory());
@@ -100,11 +104,53 @@ export const ValidationHistoryComponent = () => {
                 <div className="text-xs text-muted-foreground">
                   {item.summary.totalAdZones} zones • {item.summary.totalAds} ads
                 </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedItem(item)}
+                  className="mt-1"
+                >
+                  <Eye className="w-4 h-4 mr-1" />
+                  View Details
+                </Button>
               </div>
             </div>
           ))}
         </div>
       </CardContent>
+
+      <Dialog open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Validation Details - {selectedItem?.fileName}</DialogTitle>
+          </DialogHeader>
+          {selectedItem && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-semibold">Status: </span>
+                  <Badge variant={selectedItem.isValid ? "default" : "destructive"}>
+                    {selectedItem.isValid ? 'Valid' : 'Invalid'}
+                  </Badge>
+                </div>
+                <div>
+                  <span className="font-semibold">Validated: </span>
+                  {formatTimestamp(selectedItem.timestamp)}
+                </div>
+              </div>
+
+              <PHTPresenceTable presentPHTs={selectedItem.presentPHTs} />
+
+              <ValidationResultsTable
+                errors={selectedItem.errors}
+                warnings={selectedItem.warnings}
+                fileName={selectedItem.fileName}
+                selectedPHT="all"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
