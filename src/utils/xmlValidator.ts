@@ -26,6 +26,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
         isValid: false,
         errors,
         warnings,
+        presentPHTs: [],
         summary: {
           totalAdZones: 0,
           expectedAdZones: 0,
@@ -86,6 +87,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
     // Validate each adZone with PHT-specific rules
     let totalActualAds = 0;
     const phtGroups: { [key: number]: number[] } = {};
+    const presentPHTsSet = new Set<number>(); // Track which PHTs are actually present
     let currentLineOffset = 0; // Track position in XML
 
     adZoneElements.forEach((adZone, index) => {
@@ -98,6 +100,11 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
 
       const pht = phtElement ? parseInt(phtElement.textContent || '0') : 0;
       const expectedAdsInZone = numberOfAdsElement ? parseInt(numberOfAdsElement.textContent || '0') : 0;
+      
+      // Track present PHTs
+      if (pht > 0) {
+        presentPHTsSet.add(pht);
+      }
       
       // Find line numbers for this specific adZone elements
       const phtLine = findLineNumberFromOffset(lines, `<PHT>${pht}</PHT>`, adZoneStartLine);
@@ -250,6 +257,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
       isValid: errors.length === 0,
       errors,
       warnings,
+      presentPHTs: Array.from(presentPHTsSet).sort((a, b) => a - b),
       summary: {
         totalAdZones: adZoneElements.length,
         expectedAdZones,
@@ -271,6 +279,7 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
       isValid: false,
       errors,
       warnings,
+      presentPHTs: [],
       summary: {
         totalAdZones: 0,
         expectedAdZones: 0,

@@ -52,6 +52,7 @@ export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
   warnings: ValidationError[];
+  presentPHTs: number[];
   summary: {
     totalAdZones: number;
     expectedAdZones: number;

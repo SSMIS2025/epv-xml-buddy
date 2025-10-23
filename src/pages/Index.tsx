@@ -263,7 +263,7 @@ const Index = () => {
 
               {/* PHT Presence Table */}
               <PHTPresenceTable 
-                presentPHTs={Array.from(new Set(validationResult.errors.map(e => e.pht).filter(Boolean))) as number[]}
+                presentPHTs={validationResult.presentPHTs}
               />
 
               {/* Detailed Results */}
