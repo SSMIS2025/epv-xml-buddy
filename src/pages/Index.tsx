@@ -40,6 +40,16 @@ const Index = () => {
   };
 
   const handleFileSelect = async (content: string, name: string, mockDatabase?: Record<string, MockFileData>, path?: string) => {
+    // Check if content is empty
+    if (!content || content.trim() === '') {
+      toast({
+        title: "Empty File",
+        description: "The selected file appears to be empty. Please choose a valid XML file or check if you selected the correct folder.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setXmlContent(content);
     setFileName(name);
     setFilePath(path || '');
@@ -112,6 +122,17 @@ const Index = () => {
       const response = await window.electron.Revalidation();
       
       if (response.success && response.xmlContent) {
+        // Check if content is empty
+        if (!response.xmlContent || response.xmlContent.trim() === '') {
+          toast({
+            title: "Empty XML Content",
+            description: "The XML content from the selected folder is empty. Please ensure you have selected the correct folder with valid XML files.",
+            variant: "destructive",
+          });
+          setIsValidating(false);
+          return;
+        }
+
         setXmlContent(response.xmlContent);
         setFileName(response.fileName);
         setFilePath(response.filePath || '');
@@ -180,19 +201,18 @@ const Index = () => {
                       <FilePlus className="w-4 h-4 mr-2" />
                       New Validation
                     </Button>
-                    <Button variant="secondary" onClick={handleRevalidation}>
+                    <Button variant="outline" onClick={handleRevalidation}>
                       <RotateCcw className="w-4 h-4 mr-2" />
                       Re-validation {revalidationCount > 0 && `(${revalidationCount})`}
                     </Button>
                   </>
                 )}
                 <Button 
-                  variant="ghost" 
+                  variant="outline" 
                   onClick={() => {
                     setShowWelcome(true);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="text-muted-foreground"
                 >
                   <Home className="w-4 h-4 mr-2" />
                   Home

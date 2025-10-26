@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Clock, FileText, CheckCircle, XCircle, Trash2, Eye } from 'lucide-react';
 import { ValidationHistory, getValidationHistory, clearValidationHistory } from '@/utils/historyStorage';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ValidationResultsTable } from './ValidationResultsTable';
 import { PHTPresenceTable } from './PHTPresenceTable';
 
 export const ValidationHistoryComponent = () => {
   const [history, setHistory] = useState<ValidationHistory[]>([]);
   const [selectedItem, setSelectedItem] = useState<ValidationHistory | null>(null);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const loadHistory = () => {
     setHistory(getValidationHistory());
@@ -23,6 +25,7 @@ export const ValidationHistoryComponent = () => {
   const handleClearHistory = () => {
     clearValidationHistory();
     loadHistory();
+    setShowClearConfirm(false);
   };
 
   const formatTimestamp = (timestamp: Date) => {
@@ -62,7 +65,7 @@ export const ValidationHistoryComponent = () => {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={handleClearHistory}
+          onClick={() => setShowClearConfirm(true)}
           className="flex items-center gap-2"
         >
           <Trash2 className="w-4 h-4" />
@@ -105,7 +108,7 @@ export const ValidationHistoryComponent = () => {
                   {item.summary.totalAdZones} zones • {item.summary.totalAds} ads
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setSelectedItem(item)}
                   className="mt-1"
@@ -151,6 +154,21 @@ export const ValidationHistoryComponent = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear Validation History?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all validation history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClearHistory}>Clear History</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

@@ -84,10 +84,60 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
       });
     }
 
-    // Validate each adZone with PHT-specific rules
-    let totalActualAds = 0;
+    // First pass: collect all PHTs and check for duplicates
     const phtGroups: { [key: number]: number[] } = {};
-    const presentPHTsSet = new Set<number>(); // Track which PHTs are actually present
+    const presentPHTsSet = new Set<number>();
+    let hasDuplicatePHT = false;
+    
+    adZoneElements.forEach((adZone, index) => {
+      const phtElement = adZone.querySelector('PHT');
+      const pht = phtElement ? parseInt(phtElement.textContent || '0') : 0;
+      
+      if (pht > 0) {
+        presentPHTsSet.add(pht);
+        if (!phtGroups[pht]) {
+          phtGroups[pht] = [];
+        }
+        phtGroups[pht].push(index + 1);
+        
+        // Check if this PHT already exists (duplicate)
+        if (phtGroups[pht].length > 1) {
+          hasDuplicatePHT = true;
+        }
+      }
+    });
+
+    // If duplicate PHT found, stop validation and only report duplicate error
+    if (hasDuplicatePHT) {
+      Object.entries(phtGroups).forEach(([pht, zones]) => {
+        if (zones.length > 1) {
+          errors.push({
+            line: 1,
+            message: `{Duplicate-PHT} PHT ${pht} is duplicated in AdZones: ${zones.join(', ')}. Please fix duplicate PHTs before proceeding with validation.`,
+            type: 'error',
+            pht: parseInt(pht)
+          });
+        }
+      });
+
+      return {
+        isValid: false,
+        errors,
+        warnings,
+        presentPHTs: Array.from(presentPHTsSet).sort((a, b) => a - b),
+        summary: {
+          totalAdZones: adZoneElements.length,
+          expectedAdZones,
+          totalAds: 0,
+          expectedAds: expectedTotalAds,
+          missingTags: [],
+          invalidAttributes: []
+        }
+      };
+    }
+
+    // Continue with full validation if no duplicate PHTs
+    let totalActualAds = 0;
     let currentLineOffset = 0; // Track position in XML
 
     adZoneElements.forEach((adZone, index) => {
@@ -101,18 +151,9 @@ export function validateEPGXML(xmlContent: string, customMockDatabase?: Record<s
       const pht = phtElement ? parseInt(phtElement.textContent || '0') : 0;
       const expectedAdsInZone = numberOfAdsElement ? parseInt(numberOfAdsElement.textContent || '0') : 0;
       
-      // Track present PHTs
-      if (pht > 0) {
-        presentPHTsSet.add(pht);
-      }
-      
       // Find line numbers for this specific adZone elements
       const phtLine = findLineNumberFromOffset(lines, `<PHT>${pht}</PHT>`, adZoneStartLine);
       const numberOfAdsLine = findLineNumberFromOffset(lines, '<numberOfAds>', adZoneStartLine);
-
-      // Group PHT types for duplicate checking
-      if (!phtGroups[pht]) phtGroups[pht] = [];
-      phtGroups[pht].push(index + 1);
 
       // Get PHT validation rules
       const phtRules = PHT_VALIDATION_RULES[pht];
