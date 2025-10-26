@@ -445,10 +445,7 @@
             </div>
 
             <div class="actions">
-                <button class="btn btn-primary" onclick="handleRenewal()">
-                    Renew License Now
-                </button>
-                <button class="btn btn-secondary" onclick="handleContact()">
+                <button class="btn btn-primary" onclick="handleContact()">
                     Contact Support
                 </button>
             </div>
@@ -475,12 +472,6 @@
                     day: 'numeric'
                 });
             }
-        }
-
-        // Handle renewal button click
-        function handleRenewal() {
-            alert('Redirecting to license renewal page...\n\nIn a real application, this would navigate to your payment/renewal portal.');
-            // In production: window.location.href = 'https://your-renewal-page.com';
         }
 
         // Handle contact support button click
