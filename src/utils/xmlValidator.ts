@@ -439,10 +439,29 @@ function validateImageElementWithPHT(
   if (fileName && fileDatabase[fileName]) {
     const mockFile = fileDatabase[fileName];
     
-    if (xmlWidth !== mockFile.actualWidth || xmlHeight !== mockFile.actualHeight) {
+    // Check for image corruption
+    if (mockFile.imgCorrupted === false) {
       errors.push({
         line: imageLine,
-        message: `{Dimension-Mismatch} File ${fileName}: XML declares ${xmlWidth}x${xmlHeight} but actual dimensions are ${mockFile.actualWidth}x${mockFile.actualHeight} (AdZone ${adZone}, Ad ${adIndex})`,
+        message: `{Image-Corrupted} File ${fileName} is corrupted or unreadable (AdZone ${adZone}, Ad ${adIndex})`,
+        type: 'error',
+        adZone,
+        pht,
+        field: 'fileName'
+      });
+    }
+    
+    if (xmlWidth !== mockFile.actualWidth || xmlHeight !== mockFile.actualHeight) {
+      // Get expected dimensions from PHT rules
+      const expectedWidths = phtRules.imageAttributes.w?.allowedValues || [];
+      const expectedHeights = phtRules.imageAttributes.h?.allowedValues || [];
+      const expectedDimensions = expectedWidths.length > 0 && expectedHeights.length > 0
+        ? ` Expected dimensions for ${phtRules.name}: width (${expectedWidths.join(', ')}), height (${expectedHeights.join(', ')}).`
+        : '';
+      
+      errors.push({
+        line: imageLine,
+        message: `{Dimension-Mismatch} File ${fileName}: XML declares ${xmlWidth}x${xmlHeight} but actual dimensions are ${mockFile.actualWidth}x${mockFile.actualHeight}.${expectedDimensions} (AdZone ${adZone}, Ad ${adIndex})`,
         type: 'error',
         adZone,
         pht,

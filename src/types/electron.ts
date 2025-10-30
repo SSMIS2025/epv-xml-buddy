@@ -5,6 +5,7 @@ export interface ElectronXMLResponse {
   fileName: string;
   filePath?: string;
   mockDatabase?: Record<string, MockFileData>;
+  metaContent?: string;
   success: boolean;
   error?: string;
 }

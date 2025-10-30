@@ -70,4 +70,6 @@ export interface MockFileData {
   mimeType: string;
   resolution: string;
   fileSize: number;
+  imgPath?: string;
+  imgCorrupted?: boolean;
 }

@@ -9,6 +9,7 @@ import { validateEPGXML } from '@/utils/xmlValidator';
 import { ValidationResult, MockFileData } from '@/types/validation';
 import { ValidationResultsTable } from '@/components/ValidationResultsTable';
 import { PHTPresenceTable } from '@/components/PHTPresenceTable';
+import { ImagesTable } from '@/components/ImagesTable';
 import { Header } from '@/components/Header';
 import { FileText, RotateCcw, Home, FilePlus } from 'lucide-react';
 import { saveValidationHistory } from '@/utils/historyStorage';
@@ -23,6 +24,7 @@ const Index = () => {
   const [xmlLines, setXmlLines] = useState<string[]>([]);
   const [selectedPHT, setSelectedPHT] = useState<string>('all');
   const [revalidationCount, setRevalidationCount] = useState<number>(0);
+  const [mockDatabase, setMockDatabase] = useState<Record<string, MockFileData> | undefined>(undefined);
 
   useEffect(() => {
     // Check if user has already accepted terms
@@ -54,6 +56,7 @@ const Index = () => {
     setFileName(name);
     setFilePath(path || '');
     setXmlLines(content.split('\n'));
+    setMockDatabase(mockDatabase);
     setIsValidating(true);
     setRevalidationCount(0); // Reset revalidation count on new file
 
@@ -98,6 +101,7 @@ const Index = () => {
     setXmlLines([]);
     setSelectedPHT('all');
     setRevalidationCount(0);
+    setMockDatabase(undefined);
   };
 
   const handleRestart = () => {
@@ -122,11 +126,11 @@ const Index = () => {
       const response = await window.electron.Revalidation();
       
       if (response.success && response.xmlContent) {
-        // Check if content is empty
-        if (!response.xmlContent || response.xmlContent.trim() === '') {
+        // Check if content is empty or metacontent is empty
+        if (!response.xmlContent || response.xmlContent.trim() === '' || !response.metaContent || response.metaContent.trim() === '') {
           toast({
             title: "Empty XML Content",
-            description: "The XML content from the selected folder is empty. Please ensure you have selected the correct folder with valid XML files.",
+            description: "The XML content or metadata from the selected folder is empty. Please ensure you have selected the correct folder with valid XML files.",
             variant: "destructive",
           });
           setIsValidating(false);
@@ -137,6 +141,7 @@ const Index = () => {
         setFileName(response.fileName);
         setFilePath(response.filePath || '');
         setXmlLines(response.xmlContent.split('\n'));
+        setMockDatabase(response.mockDatabase);
         
         const result = validateEPGXML(response.xmlContent, response.mockDatabase);
         setValidationResult(result);
@@ -282,6 +287,14 @@ const Index = () => {
               <PHTPresenceTable 
                 presentPHTs={validationResult.presentPHTs}
               />
+
+              {/* Images Table */}
+              {mockDatabase && Object.keys(mockDatabase).length > 0 && (
+                <ImagesTable 
+                  mockDatabase={mockDatabase}
+                  selectedPHT={selectedPHT}
+                />
+              )}
 
               {/* Detailed Results */}
               {(() => {
