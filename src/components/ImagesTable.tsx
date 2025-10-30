@@ -107,21 +107,19 @@ export const ImagesTable = ({ mockDatabase, selectedPHT }: ImagesTableProps) => 
                             <Eye className="w-4 h-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl">
+                  <DialogContent className="max-w-4xl">
                           <DialogHeader>
                             <DialogTitle>{image.fileName}</DialogTitle>
                           </DialogHeader>
                           <div className="space-y-4">
-                            <div className="bg-muted rounded-lg p-4 flex items-center justify-center min-h-[300px]">
-                              <img 
-                                src={`file://${image.imgPath}`} 
-                                alt={image.fileName}
-                                className="max-w-full max-h-[500px] object-contain"
-                                onError={(e) => {
-                                  e.currentTarget.src = '/placeholder.svg';
-                                  e.currentTarget.alt = 'Image preview not available';
-                                }}
-                              />
+                            <div className="bg-muted rounded-lg p-4 flex flex-col items-center justify-center min-h-[300px] gap-4">
+                              <div className="text-center space-y-2">
+                                <AlertTriangle className="w-12 h-12 mx-auto text-muted-foreground" />
+                                <p className="text-sm text-muted-foreground max-w-md">
+                                  Image preview is not available in the browser due to security restrictions. 
+                                  The image file is located at the path shown below.
+                                </p>
+                              </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                               <div>
@@ -138,7 +136,9 @@ export const ImagesTable = ({ mockDatabase, selectedPHT }: ImagesTableProps) => 
                               </div>
                               <div className="col-span-2">
                                 <span className="font-semibold">Path:</span>
-                                <p className="text-muted-foreground break-all mt-1">{image.imgPath}</p>
+                                <p className="text-muted-foreground break-all mt-1 font-mono text-xs bg-muted p-2 rounded">
+                                  {image.imgPath}
+                                </p>
                               </div>
                             </div>
                           </div>
