@@ -347,9 +347,48 @@ function validateImageElementWithPHT(
 ) {
   // Find the line number for this specific image element
   const imageLine = findLineNumberFromOffset(lines, '<image', startLine);
+  // Validate dimension pair first
+  const xmlWidth = imageElement.getAttribute('w');
+  const xmlHeight = imageElement.getAttribute('h');
+  
+  if (xmlWidth && xmlHeight && phtRules.validDimensionPairs) {
+    const isValidPair = phtRules.validDimensionPairs.some(
+      (pair: { w: string; h: string }) => pair.w === xmlWidth && pair.h === xmlHeight
+    );
+    
+    if (!isValidPair) {
+      const validPairs = phtRules.validDimensionPairs
+        .map((p: { w: string; h: string }) => `${p.w}x${p.h}`)
+        .join(', ');
+      errors.push({
+        line: imageLine,
+        message: `{Invalid-Dimension-Pair} Dimension pair ${xmlWidth}x${xmlHeight} is not valid for ${phtRules.name}. Valid pairs: ${validPairs} (AdZone ${adZone}, Ad ${adIndex})`,
+        type: 'error',
+        adZone,
+        pht,
+        field: 'dimensions'
+      });
+    }
+  }
+
   // Validate all required attributes for this PHT type
   Object.entries(phtRules.imageAttributes).forEach(([attr, rules]: [string, any]) => {
     const value = imageElement.getAttribute(attr);
+    
+    // Skip w and h validation here as we already validated the pair above
+    if (attr === 'w' || attr === 'h') {
+      if (rules.required && !value) {
+        errors.push({
+          line: imageLine,
+          message: `{Missing-Attribute} Missing '${attr}' attribute required for ${phtRules.name} (AdZone ${adZone}, Ad ${adIndex})`,
+          type: 'error',
+          adZone,
+          pht,
+          field: attr
+        });
+      }
+      return;
+    }
     
     if (rules.required && !value) {
       errors.push({
@@ -433,8 +472,8 @@ function validateImageElementWithPHT(
 
   // Validate dimensions and file against mock database
   const fileName = imageElement.getAttribute('fileName');
-  const xmlWidth = parseInt(imageElement.getAttribute('w') || '0');
-  const xmlHeight = parseInt(imageElement.getAttribute('h') || '0');
+  const xmlWidthNum = parseInt(xmlWidth || '0');
+  const xmlHeightNum = parseInt(xmlHeight || '0');
 
   if (fileName && fileDatabase[fileName]) {
     const mockFile = fileDatabase[fileName];
@@ -451,17 +490,18 @@ function validateImageElementWithPHT(
       });
     }
     
-    if (xmlWidth !== mockFile.actualWidth || xmlHeight !== mockFile.actualHeight) {
-      // Get expected dimensions from PHT rules
-      const expectedWidths = phtRules.imageAttributes.w?.allowedValues || [];
-      const expectedHeights = phtRules.imageAttributes.h?.allowedValues || [];
-      const expectedDimensions = expectedWidths.length > 0 && expectedHeights.length > 0
-        ? ` Expected dimensions for ${phtRules.name}: width (${expectedWidths.join(', ')}), height (${expectedHeights.join(', ')}).`
+    if (xmlWidthNum !== mockFile.actualWidth || xmlHeightNum !== mockFile.actualHeight) {
+      // Get expected dimension pairs from PHT rules
+      const validPairs = phtRules.validDimensionPairs
+        ? phtRules.validDimensionPairs.map((p: { w: string; h: string }) => `${p.w}x${p.h}`).join(', ')
+        : 'Not specified';
+      const expectedDimensions = validPairs !== 'Not specified'
+        ? ` Expected valid dimension pairs for ${phtRules.name}: ${validPairs}.`
         : '';
       
       errors.push({
         line: imageLine,
-        message: `{Dimension-Mismatch} File ${fileName}: XML declares ${xmlWidth}x${xmlHeight} but actual dimensions are ${mockFile.actualWidth}x${mockFile.actualHeight}.${expectedDimensions} (AdZone ${adZone}, Ad ${adIndex})`,
+        message: `{Dimension-Mismatch} File ${fileName}: XML declares ${xmlWidthNum}x${xmlHeightNum} but actual dimensions are ${mockFile.actualWidth}x${mockFile.actualHeight}.${expectedDimensions} (AdZone ${adZone}, Ad ${adIndex})`,
         type: 'error',
         adZone,
         pht,

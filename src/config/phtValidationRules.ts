@@ -5,6 +5,7 @@ export interface PHTValidationRule {
   minAds: number;
   maxAds: number;
   requiredTags: string[];
+  validDimensionPairs: Array<{ w: string; h: string }>; // Valid width-height combinations
   imageAttributes: {
     [key: string]: {
       required: boolean;
@@ -31,6 +32,12 @@ export const PHT_VALIDATION_RULES: { [key: number]: PHTValidationRule } = {
     minAds: 1,
     maxAds: 15,
     requiredTags: ['image', 'animate', 'genre', 'lang', 'adsStartTime', 'adsExpirationTime'],
+    validDimensionPairs: [
+      { w: '180', h: '125' },
+      { w: '250', h: '180' },
+      { w: '300', h: '240' },
+      { w: '360', h: '280' }
+    ],
     imageAttributes: {
       id: { 
         required: true, 
@@ -97,6 +104,11 @@ export const PHT_VALIDATION_RULES: { [key: number]: PHTValidationRule } = {
     minAds: 1,
     maxAds: 10,
     requiredTags: ['image', 'animate', 'genre', 'lang', 'adsStartTime', 'adsExpirationTime'],
+    validDimensionPairs: [
+      { w: '174', h: '136' },
+      { w: '200', h: '150' },
+      { w: '250', h: '180' }
+    ],
     imageAttributes: {
       id: { 
         required: true, 
@@ -163,6 +175,11 @@ export const PHT_VALIDATION_RULES: { [key: number]: PHTValidationRule } = {
     minAds: 1,
     maxAds: 8,
     requiredTags: ['image', 'animate', 'genre', 'lang', 'adsStartTime', 'adsExpirationTime'],
+    validDimensionPairs: [
+      { w: '360', h: '180' },
+      { w: '400', h: '200' },
+      { w: '450', h: '240' }
+    ],
     imageAttributes: {
       id: { 
         required: true, 
@@ -229,6 +246,11 @@ export const PHT_VALIDATION_RULES: { [key: number]: PHTValidationRule } = {
     minAds: 1,
     maxAds: 5,
     requiredTags: ['image', 'animate', 'genre', 'lang', 'adsStartTime', 'adsExpirationTime'],
+    validDimensionPairs: [
+      { w: '480', h: '240' },
+      { w: '720', h: '360' },
+      { w: '1080', h: '540' }
+    ],
     imageAttributes: {
       id: { 
         required: true, 
