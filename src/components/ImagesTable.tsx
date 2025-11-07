@@ -143,8 +143,18 @@ export const ImagesTable = ({ mockDatabase, selectedPHT }: ImagesTableProps) => 
                               <DialogTitle className="text-foreground font-semibold">{image.fileName}</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-6">
-                              <div className="bg-gradient-to-br from-primary/5 via-accent/10 to-primary/5 rounded-lg p-8 flex flex-col items-center justify-center min-h-[300px] gap-4 border border-primary/20">
-                                <div className="text-center space-y-3 animate-fade-in">
+                              <div className="bg-gradient-to-br from-primary/5 via-accent/10 to-primary/5 rounded-lg p-8 flex items-center justify-center min-h-[300px] border border-primary/20">
+                                <img 
+                                  src={`file:///${image.imgPath}`}
+                                  alt={image.fileName}
+                                  className="max-w-full max-h-[500px] object-contain rounded-lg shadow-lg"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const errorMsg = e.currentTarget.parentElement?.querySelector('.error-message');
+                                    if (errorMsg) errorMsg.classList.remove('hidden');
+                                  }}
+                                />
+                                <div className="error-message hidden text-center space-y-3 animate-fade-in">
                                   <AlertTriangle className="w-16 h-16 mx-auto text-warning/70 animate-pulse" />
                                   <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
                                     Image preview is not available in the browser due to security restrictions. 
@@ -238,12 +248,12 @@ export const ImagesTable = ({ mockDatabase, selectedPHT }: ImagesTableProps) => 
                 className="border border-border/40 rounded-lg overflow-hidden bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-300"
               >
                 <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-primary/5 transition-colors group">
-                  <div className="flex items-center gap-3 text-left w-full">
-                    <div className={`w-1.5 h-8 rounded-full ${pht === 'unknown' ? 'bg-warning' : 'bg-primary'} group-hover:h-10 transition-all`} />
-                    <div className="flex-1">
-                      <span className="font-semibold text-foreground text-base">
-                        {pht === 'unknown' ? 'Unknown PHT Images' : `PHT ${pht} Images`}
-                      </span>
+                    <div className="flex items-center gap-3 text-left w-full">
+                      <div className={`w-1.5 h-8 rounded-full ${pht === 'unknown' ? 'bg-warning' : 'bg-primary'} group-hover:h-10 transition-all`} />
+                      <div className="flex-1">
+                        <span className="font-semibold text-foreground text-base">
+                          {pht === 'unknown' ? 'Uncategorized Images' : `PHT ${pht} Images`}
+                        </span>
                       <Badge 
                         variant={pht === 'unknown' ? 'secondary' : 'default'}
                         className="ml-3 shadow-sm"

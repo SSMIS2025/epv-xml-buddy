@@ -347,29 +347,8 @@ function validateImageElementWithPHT(
 ) {
   // Find the line number for this specific image element
   const imageLine = findLineNumberFromOffset(lines, '<image', startLine);
-  // Validate dimension pair first
   const xmlWidth = imageElement.getAttribute('w');
   const xmlHeight = imageElement.getAttribute('h');
-  
-  if (xmlWidth && xmlHeight && phtRules.validDimensionPairs) {
-    const isValidPair = phtRules.validDimensionPairs.some(
-      (pair: { w: string; h: string }) => pair.w === xmlWidth && pair.h === xmlHeight
-    );
-    
-    if (!isValidPair) {
-      const validPairs = phtRules.validDimensionPairs
-        .map((p: { w: string; h: string }) => `${p.w}x${p.h}`)
-        .join(', ');
-      errors.push({
-        line: imageLine,
-        message: `{Invalid-Dimension-Pair} Dimension pair ${xmlWidth}x${xmlHeight} is not valid for ${phtRules.name}. Valid pairs: ${validPairs} (AdZone ${adZone}, Ad ${adIndex})`,
-        type: 'error',
-        adZone,
-        pht,
-        field: 'dimensions'
-      });
-    }
-  }
 
   // Validate all required attributes for this PHT type
   Object.entries(phtRules.imageAttributes).forEach(([attr, rules]: [string, any]) => {
@@ -490,8 +469,8 @@ function validateImageElementWithPHT(
       });
     }
     
+    // Check if XML dimensions match actual file dimensions first
     if (xmlWidthNum !== mockFile.actualWidth || xmlHeightNum !== mockFile.actualHeight) {
-      // Get expected dimension pairs from PHT rules
       const validPairs = phtRules.validDimensionPairs
         ? phtRules.validDimensionPairs.map((p: { w: string; h: string }) => `${p.w}x${p.h}`).join(', ')
         : 'Not specified';
@@ -507,6 +486,25 @@ function validateImageElementWithPHT(
         pht,
         field: 'dimensions'
       });
+    } else if (xmlWidth && xmlHeight && phtRules.validDimensionPairs) {
+      // Only validate dimension pair if XML matches actual dimensions
+      const isValidPair = phtRules.validDimensionPairs.some(
+        (pair: { w: string; h: string }) => pair.w === xmlWidth && pair.h === xmlHeight
+      );
+      
+      if (!isValidPair) {
+        const validPairs = phtRules.validDimensionPairs
+          .map((p: { w: string; h: string }) => `${p.w}x${p.h}`)
+          .join(', ');
+        errors.push({
+          line: imageLine,
+          message: `{Invalid-Dimension-Pair} Dimension pair ${xmlWidth}x${xmlHeight} is not valid for ${phtRules.name}. Valid pairs: ${validPairs} (AdZone ${adZone}, Ad ${adIndex})`,
+          type: 'error',
+          adZone,
+          pht,
+          field: 'dimensions'
+        });
+      }
     }
   } else if (fileName) {
     errors.push({
